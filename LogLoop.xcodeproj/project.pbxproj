@@ -7,19 +7,84 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0910FBDEE4B4D07E4F5CEFEC /* Exercise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A065A49AD35BA5D704567F7 /* Exercise.swift */; };
+		15040A11901E0BAFBCD8C95C /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7C9C15E58F253D78806F001 /* Enums.swift */; };
+		1DAF0BA3BCBFD4A3FA021183 /* FieldValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16F85EC83625D5FB380E305E /* FieldValue.swift */; };
 		23598BE78C533120032F6CB8 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9773E57BEA81A62E51680424 /* RootTabView.swift */; };
+		352EA02544CCFA1801F7E341 /* FieldDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5CCDCB1C343B42645A4528B /* FieldDefinition.swift */; };
+		3680C1C17F23C026AB7F318D /* FieldDefinitionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872F529DA66D4683CDE3A53A /* FieldDefinitionEditorView.swift */; };
+		3B4E38F12E1DA08DEBF6A3A9 /* Template.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A856DE74CBFED3958063ED4 /* Template.swift */; };
+		3F196C47CD555D69F08CCB4B /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA6CC9C366BBDC5BBF3C9F07 /* SampleData.swift */; };
+		3F30B4CC4A97D433719E62B5 /* DurationPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A78964B2C02B111DF6E81C2 /* DurationPicker.swift */; };
+		5CAB41B97B9129D952C69220 /* ExerciseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7F9C813E67C44B14891A88 /* ExerciseSheet.swift */; };
+		73CCD32F1BB2D456AB4A7DA6 /* SheetWeek.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E00A4587835E563DEC01AC5 /* SheetWeek.swift */; };
+		74101DFF0FABB0706AB58D1B /* PracticeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE628687B6068E68F87B5124 /* PracticeSession.swift */; };
+		807C1C84F20871FE375F0A23 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA37FED7D3D73F31F83782DE /* Theme.swift */; };
+		92C6E030D6273B6B7260146F /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5756A8A041C9357FF9D1CA34 /* Formatters.swift */; };
+		96CEDE487913A9ABF6BF7F82 /* TemplateEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AAC1769FB8765AEBAE8DBEC /* TemplateEditorView.swift */; };
+		971AE350137D5AAD39F0EDF7 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D828FD7A25FC9CFC192C583 /* EmptyStateView.swift */; };
 		9EC14C17ADCF6B3E2DCA9629 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5CF4FA58F15633FA05D0FA99 /* Assets.xcassets */; };
+		A5FD2282D544721F57D65601 /* TemplateCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 948EB55F2231324AAAF62788 /* TemplateCategory.swift */; };
+		B3F35039D562282C01588D3C /* SessionEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77D58A41E87B9F627894683F /* SessionEntry.swift */; };
 		E17D96B6AF0B026E1243169F /* LogLoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13AFA79D52E728312076A2E /* LogLoopApp.swift */; };
+		F8E0CEB254E8C56B19B68A4F /* TemplateListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 941A86EF9C86E3A9EC23AA32 /* TemplateListView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0A065A49AD35BA5D704567F7 /* Exercise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exercise.swift; sourceTree = "<group>"; };
+		0D828FD7A25FC9CFC192C583 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		16F85EC83625D5FB380E305E /* FieldValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldValue.swift; sourceTree = "<group>"; };
+		3A78964B2C02B111DF6E81C2 /* DurationPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationPicker.swift; sourceTree = "<group>"; };
+		5756A8A041C9357FF9D1CA34 /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
+		5AAC1769FB8765AEBAE8DBEC /* TemplateEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateEditorView.swift; sourceTree = "<group>"; };
 		5CF4FA58F15633FA05D0FA99 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5E00A4587835E563DEC01AC5 /* SheetWeek.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetWeek.swift; sourceTree = "<group>"; };
+		77D58A41E87B9F627894683F /* SessionEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionEntry.swift; sourceTree = "<group>"; };
+		7D7F9C813E67C44B14891A88 /* ExerciseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseSheet.swift; sourceTree = "<group>"; };
+		872F529DA66D4683CDE3A53A /* FieldDefinitionEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldDefinitionEditorView.swift; sourceTree = "<group>"; };
+		941A86EF9C86E3A9EC23AA32 /* TemplateListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateListView.swift; sourceTree = "<group>"; };
+		948EB55F2231324AAAF62788 /* TemplateCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateCategory.swift; sourceTree = "<group>"; };
 		9773E57BEA81A62E51680424 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
+		9A856DE74CBFED3958063ED4 /* Template.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Template.swift; sourceTree = "<group>"; };
+		A5CCDCB1C343B42645A4528B /* FieldDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldDefinition.swift; sourceTree = "<group>"; };
+		AA6CC9C366BBDC5BBF3C9F07 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		BA37FED7D3D73F31F83782DE /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		BE628687B6068E68F87B5124 /* PracticeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeSession.swift; sourceTree = "<group>"; };
+		D7C9C15E58F253D78806F001 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		F13AFA79D52E728312076A2E /* LogLoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogLoopApp.swift; sourceTree = "<group>"; };
 		FC4B1782A6D5BAAF45F9669F /* LogLoop.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LogLoop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		044954BBF0D9A47A87B42CD8 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				3A78964B2C02B111DF6E81C2 /* DurationPicker.swift */,
+				0D828FD7A25FC9CFC192C583 /* EmptyStateView.swift */,
+				5756A8A041C9357FF9D1CA34 /* Formatters.swift */,
+				BA37FED7D3D73F31F83782DE /* Theme.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		239DAF952F2F607835ADBB16 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				D7C9C15E58F253D78806F001 /* Enums.swift */,
+				0A065A49AD35BA5D704567F7 /* Exercise.swift */,
+				7D7F9C813E67C44B14891A88 /* ExerciseSheet.swift */,
+				A5CCDCB1C343B42645A4528B /* FieldDefinition.swift */,
+				16F85EC83625D5FB380E305E /* FieldValue.swift */,
+				BE628687B6068E68F87B5124 /* PracticeSession.swift */,
+				AA6CC9C366BBDC5BBF3C9F07 /* SampleData.swift */,
+				77D58A41E87B9F627894683F /* SessionEntry.swift */,
+				5E00A4587835E563DEC01AC5 /* SheetWeek.swift */,
+				9A856DE74CBFED3958063ED4 /* Template.swift */,
+				948EB55F2231324AAAF62788 /* TemplateCategory.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
 		2D33C9A2EEF44B8A896F4F67 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -27,6 +92,14 @@
 				9773E57BEA81A62E51680424 /* RootTabView.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		37651D04AD15F6EEDA19E825 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				B1F599AE18F27941039BA0F4 /* Templates */,
+			);
+			path = Features;
 			sourceTree = "<group>";
 		};
 		4D9F470175A323F067F9B66B /* Resources */ = {
@@ -50,8 +123,21 @@
 			isa = PBXGroup;
 			children = (
 				2D33C9A2EEF44B8A896F4F67 /* App */,
+				37651D04AD15F6EEDA19E825 /* Features */,
+				239DAF952F2F607835ADBB16 /* Models */,
+				044954BBF0D9A47A87B42CD8 /* Shared */,
 			);
 			path = Sources;
+			sourceTree = "<group>";
+		};
+		B1F599AE18F27941039BA0F4 /* Templates */ = {
+			isa = PBXGroup;
+			children = (
+				872F529DA66D4683CDE3A53A /* FieldDefinitionEditorView.swift */,
+				5AAC1769FB8765AEBAE8DBEC /* TemplateEditorView.swift */,
+				941A86EF9C86E3A9EC23AA32 /* TemplateListView.swift */,
+			);
+			path = Templates;
 			sourceTree = "<group>";
 		};
 		E5F4F9D5763403FDEA3924A5 = {
@@ -141,8 +227,26 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F30B4CC4A97D433719E62B5 /* DurationPicker.swift in Sources */,
+				971AE350137D5AAD39F0EDF7 /* EmptyStateView.swift in Sources */,
+				15040A11901E0BAFBCD8C95C /* Enums.swift in Sources */,
+				0910FBDEE4B4D07E4F5CEFEC /* Exercise.swift in Sources */,
+				5CAB41B97B9129D952C69220 /* ExerciseSheet.swift in Sources */,
+				352EA02544CCFA1801F7E341 /* FieldDefinition.swift in Sources */,
+				3680C1C17F23C026AB7F318D /* FieldDefinitionEditorView.swift in Sources */,
+				1DAF0BA3BCBFD4A3FA021183 /* FieldValue.swift in Sources */,
+				92C6E030D6273B6B7260146F /* Formatters.swift in Sources */,
 				E17D96B6AF0B026E1243169F /* LogLoopApp.swift in Sources */,
+				74101DFF0FABB0706AB58D1B /* PracticeSession.swift in Sources */,
 				23598BE78C533120032F6CB8 /* RootTabView.swift in Sources */,
+				3F196C47CD555D69F08CCB4B /* SampleData.swift in Sources */,
+				B3F35039D562282C01588D3C /* SessionEntry.swift in Sources */,
+				73CCD32F1BB2D456AB4A7DA6 /* SheetWeek.swift in Sources */,
+				3B4E38F12E1DA08DEBF6A3A9 /* Template.swift in Sources */,
+				A5FD2282D544721F57D65601 /* TemplateCategory.swift in Sources */,
+				96CEDE487913A9ABF6BF7F82 /* TemplateEditorView.swift in Sources */,
+				F8E0CEB254E8C56B19B68A4F /* TemplateListView.swift in Sources */,
+				807C1C84F20871FE375F0A23 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
