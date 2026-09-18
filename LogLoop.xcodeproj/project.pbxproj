@@ -56,10 +56,10 @@
 		16F85EC83625D5FB380E305E /* FieldValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldValue.swift; sourceTree = "<group>"; };
 		2CD7BB661C3CF9D93FAE4C04 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		32104D8D7A15A9C7C6F9F456 /* NotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduler.swift; sourceTree = "<group>"; };
-		34C49E636323DFBBB25345B6 /* alert.caf */ = {isa = PBXFileReference; path = alert.caf; sourceTree = "<group>"; };
+		34C49E636323DFBBB25345B6 /* alert.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = alert.caf; sourceTree = "<group>"; };
 		39564E13DF1217864F9A96B3 /* PracticeRunnerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeRunnerView.swift; sourceTree = "<group>"; };
 		3A78964B2C02B111DF6E81C2 /* DurationPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationPicker.swift; sourceTree = "<group>"; };
-		41DB19157E62AB7DB5FDBC9A /* silence.caf */ = {isa = PBXFileReference; path = silence.caf; sourceTree = "<group>"; };
+		41DB19157E62AB7DB5FDBC9A /* silence.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = silence.caf; sourceTree = "<group>"; };
 		55248D66FC4BAFC54C1742D3 /* AudioAlertService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAlertService.swift; sourceTree = "<group>"; };
 		5756A8A041C9357FF9D1CA34 /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
 		5AAC1769FB8765AEBAE8DBEC /* TemplateEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateEditorView.swift; sourceTree = "<group>"; };
@@ -88,7 +88,7 @@
 		D7C9C15E58F253D78806F001 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		F13AFA79D52E728312076A2E /* LogLoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogLoopApp.swift; sourceTree = "<group>"; };
 		F18530643D3AEA0D0697925D /* WeekManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekManagerView.swift; sourceTree = "<group>"; };
-		FC4B1782A6D5BAAF45F9669F /* LogLoop.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LogLoop.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC4B1782A6D5BAAF45F9669F /* LogLoop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LogLoop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -270,7 +270,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					191BEC4997572D8FD7235251 = {
 						DevelopmentTeam = ELD4A89N37;
@@ -365,7 +365,6 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = ELD4A89N37;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LogLoop/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -388,7 +387,6 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = ELD4A89N37;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LogLoop/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -438,8 +436,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = ELD4A89N37;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -460,6 +460,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -501,8 +502,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ELD4A89N37;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -516,6 +519,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;

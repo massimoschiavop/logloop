@@ -101,7 +101,7 @@ struct WeekManagerView: View {
 
     private func delete(_ week: SheetWeek) {
         context.delete(week)
-        var remaining = sheet.weeks.filter { $0 !== week }
+        let remaining = sheet.weeks.filter { $0 !== week }
         remaining.renumber()
         for (index, item) in remaining.enumerated() {
             item.number = index + 1
