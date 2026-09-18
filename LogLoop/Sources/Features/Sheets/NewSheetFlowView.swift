@@ -6,11 +6,20 @@ struct NewSheetFlowView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \Template.createdAt, order: .reverse) private var templates: [Template]
 
+    enum SheetType: String, CaseIterable, Identifiable {
+        case single = "Singola"
+        case multiWeek = "Multi Settimana"
+
+        var id: String { rawValue }
+    }
+
     @State private var selectedTemplate: Template?
     @State private var name = ""
-    @State private var isProgram = false
+    @State private var sheetType: SheetType = .single
     @State private var weekCount = 4
-    @State private var startDate = Date()
+    private let startDate = Date()
+
+    private var isProgram: Bool { sheetType == .multiWeek }
 
     var body: some View {
         NavigationStack {
@@ -31,10 +40,13 @@ struct NewSheetFlowView: View {
                 }
 
                 Section {
-                    Toggle("Programma su più settimane", isOn: $isProgram.animation())
+                    Picker("Tipo Scheda", selection: $sheetType.animation()) {
+                        ForEach(SheetType.allCases) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
                     if isProgram {
                         Stepper("\(weekCount) settimane", value: $weekCount, in: 2...52)
-                        DatePicker("Inizio", selection: $startDate, displayedComponents: .date)
                     }
                 } footer: {
                     Text(isProgram
