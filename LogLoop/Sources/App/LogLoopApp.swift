@@ -3,6 +3,7 @@ import SwiftUI
 
 @main
 struct LogLoopApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     let container: ModelContainer
 
     init() {
