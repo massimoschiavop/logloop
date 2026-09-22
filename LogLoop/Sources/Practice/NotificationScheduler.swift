@@ -66,11 +66,9 @@ final class NotificationScheduler {
 
     private func makeRequest(finished: PracticeStep, next: PracticeStep?, after interval: TimeInterval) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
-        content.title = finished.kind == .rest ? "Pausa finita" : "\(finished.title) completato"
+        content.title = "\(finished.title) completato"
         if let next {
-            content.body = next.kind == .rest
-                ? "Pausa di \(Formatters.clock(next.durationSeconds))"
-                : "Ora: \(next.title) · \(Formatters.clock(next.durationSeconds))"
+            content.body = "Ora: \(next.title) · \(Formatters.clock(next.durationSeconds))"
         } else {
             content.body = "Scheda completata"
         }

@@ -14,14 +14,13 @@ struct PracticeRunnerView: View {
     @State private var confirmingExit = false
     @State private var askingForNotifications = false
 
-    init(week: SheetWeek, sheet: ExerciseSheet) {
+    init(sheet: ExerciseSheet) {
         self.sheet = sheet
-        _engine = State(initialValue: PracticeEngine(plan: PracticePlan(week: week, sheet: sheet)))
+        _engine = State(initialValue: PracticeEngine(plan: PracticePlan(sheet: sheet)))
     }
 
     private var tint: Color {
-        guard let step = engine.currentStep, step.kind == .exercise else { return .teal }
-        return Color(hex: sheet.template?.colorHex ?? "#5254D9")
+        Color(hex: sheet.template?.colorHex ?? "#5254D9")
     }
 
     var body: some View {
@@ -107,11 +106,6 @@ struct PracticeRunnerView: View {
                 VStack(spacing: 1) {
                     Text(sheet.name)
                         .font(.subheadline.weight(.medium))
-                    if sheet.isProgram {
-                        Text("Settimana \(engine.plan.weekNumber)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
                 }
                 Spacer()
                 Image(systemName: "xmark").opacity(0)
@@ -131,12 +125,7 @@ struct PracticeRunnerView: View {
         VStack(spacing: 14) {
             if let step = engine.currentStep {
                 VStack(spacing: 2) {
-                    if step.kind == .rest {
-                        Text("PAUSA")
-                            .font(.caption.weight(.bold))
-                            .tracking(1.6)
-                            .foregroundStyle(.teal)
-                    } else if !step.categoryName.isEmpty {
+                    if !step.categoryName.isEmpty {
                         Text(step.categoryName.uppercased())
                             .font(.caption.weight(.bold))
                             .tracking(1.6)

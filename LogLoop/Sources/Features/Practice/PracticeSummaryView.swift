@@ -25,9 +25,6 @@ struct PracticeSummaryView: View {
 
                 Section("Scheda") {
                     LabeledContent("Nome", value: sheet.name)
-                    if sheet.isProgram {
-                        LabeledContent("Settimana", value: "\(engine.plan.weekNumber)")
-                    }
                 }
             }
             .navigationTitle("Sessione completata")

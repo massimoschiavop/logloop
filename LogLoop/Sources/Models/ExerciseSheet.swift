@@ -1,18 +1,21 @@
 import Foundation
 import SwiftData
 
-/// Una scheda. Con una sola settimana è una scheda riutilizzabile; con più settimane
-/// è un programma che si estende da una data all'altra.
+/// Una scheda: un elenco di esercizi, oppure una struttura a gruppi (e sottogruppi).
 @Model
 final class ExerciseSheet {
     var name: String = ""
     var notes: String = ""
     var createdAt: Date = Date()
     var isArchived: Bool = false
+    var isGrouped: Bool = false
     var template: Template?
 
-    @Relationship(deleteRule: .cascade, inverse: \SheetWeek.sheet)
-    var weeksStorage: [SheetWeek] = []
+    @Relationship(deleteRule: .cascade, inverse: \Exercise.sheet)
+    var exercisesStorage: [Exercise] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \SheetGroup.sheet)
+    var groupsStorage: [SheetGroup] = []
 
     // Nullify e non cascade: eliminare una scheda non deve cancellare lo storico.
     @Relationship(deleteRule: .nullify, inverse: \PracticeSession.sheet)
@@ -25,22 +28,23 @@ final class ExerciseSheet {
         self.template = template
     }
 
-    var weeks: [SheetWeek] {
-        weeksStorage.sorted { $0.sortIndex < $1.sortIndex }
+    var exercises: [Exercise] {
+        exercisesStorage.sorted { $0.sortIndex < $1.sortIndex }
     }
 
-    var isProgram: Bool { weeksStorage.count > 1 }
-
-    var startDate: Date? {
-        weeksStorage.compactMap(\.startDate).min()
-    }
-
-    var endDate: Date? {
-        guard let last = weeks.last, let start = last.startDate else { return nil }
-        return Calendar.current.date(byAdding: .day, value: 6, to: start)
+    var groups: [SheetGroup] {
+        groupsStorage.sorted { $0.sortIndex < $1.sortIndex }
     }
 
     var totalDurationSeconds: Int {
-        weeksStorage.reduce(0) { $0 + $1.totalDurationSeconds }
+        isGrouped
+            ? groupsStorage.reduce(0) { $0 + $1.totalDurationSeconds }
+            : exercisesStorage.reduce(0) { $0 + $1.durationSeconds }
+    }
+
+    var exerciseCount: Int {
+        isGrouped
+            ? groupsStorage.reduce(0) { $0 + $1.exerciseCount }
+            : exercisesStorage.count
     }
 }

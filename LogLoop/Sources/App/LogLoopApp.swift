@@ -4,6 +4,7 @@ import SwiftUI
 @main
 struct LogLoopApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @StateObject private var appearance = AppearanceSettings()
     let container: ModelContainer
 
     init() {
@@ -12,7 +13,8 @@ struct LogLoopApp: App {
             TemplateCategory.self,
             FieldDefinition.self,
             ExerciseSheet.self,
-            SheetWeek.self,
+            SheetGroup.self,
+            SheetSubgroup.self,
             Exercise.self,
             FieldValue.self,
             PracticeSession.self,
@@ -29,6 +31,9 @@ struct LogLoopApp: App {
     var body: some Scene {
         WindowGroup {
             RootTabView()
+                .environmentObject(appearance)
+                .preferredColorScheme(appearance.theme.colorScheme)
+                .tint(appearance.accentColor.color)
         }
         .modelContainer(container)
     }

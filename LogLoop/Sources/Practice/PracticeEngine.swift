@@ -69,7 +69,7 @@ final class PracticeEngine {
     }
 
     var currentExerciseNumber: Int {
-        plan.steps.prefix(index + 1).filter { $0.kind == .exercise }.count
+        index + 1
     }
 
     var isFinished: Bool { state == .finished }
@@ -318,8 +318,7 @@ final class PracticeEngine {
         var skipped = 0
         for (stepIndex, seconds) in elapsedByStep {
             total += seconds
-            guard plan.steps.indices.contains(stepIndex),
-                  plan.steps[stepIndex].kind == .exercise else { continue }
+            guard plan.steps.indices.contains(stepIndex) else { continue }
             if skippedSteps.contains(stepIndex) {
                 skipped += 1
             } else {
@@ -332,7 +331,6 @@ final class PracticeEngine {
     private func persistSession(in context: ModelContext, sheet: ExerciseSheet?) -> PracticeSession {
         let session = PracticeSession(
             sheet: sheet,
-            weekNumber: plan.weekNumber,
             sheetNameSnapshot: plan.sheetName,
             startedAt: startedAt
         )
@@ -341,7 +339,7 @@ final class PracticeEngine {
         context.insert(session)
 
         var order = 0
-        for (stepIndex, step) in plan.steps.enumerated() where step.kind == .exercise {
+        for (stepIndex, step) in plan.steps.enumerated() {
             guard let actual = elapsedByStep[stepIndex] else { continue }
             let outcome: SessionOutcome
             if skippedSteps.contains(stepIndex) {

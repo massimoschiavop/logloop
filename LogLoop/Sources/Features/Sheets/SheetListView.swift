@@ -5,10 +5,10 @@ struct SheetListView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \ExerciseSheet.createdAt, order: .reverse) private var sheets: [ExerciseSheet]
     @Query private var templates: [Template]
-    @State private var creating = false
-
-    private var programs: [ExerciseSheet] { sheets.filter(\.isProgram) }
-    private var simpleSheets: [ExerciseSheet] { sheets.filter { !$0.isProgram } }
+    @State private var creatingSheet: ExerciseSheet?
+    @State private var editingSheet: ExerciseSheet?
+    @State private var showingNoTemplateAlert = false
+    @State private var creatingTemplate: Template?
 
     var body: some View {
         NavigationStack {
@@ -19,55 +19,97 @@ struct SheetListView: View {
                         title: "Nessuna scheda",
                         message: templates.isEmpty
                             ? "Crea prima un modello, poi potrai costruirci sopra le tue schede."
-                            : "Crea una scheda da un modello per iniziare a organizzare gli esercizi.",
-                        actionTitle: templates.isEmpty ? nil : "Nuova scheda",
-                        action: templates.isEmpty ? nil : { creating = true }
+                            : "Crea una scheda da un modello per iniziare a organizzare gli esercizi."
                     )
                 } else {
                     List {
-                        if !programs.isEmpty {
-                            Section("Programmi") {
-                                ForEach(programs) { sheet in
-                                    NavigationLink(value: sheet) {
-                                        SheetRow(sheet: sheet)
-                                    }
-                                }
-                                .onDelete { delete(programs, at: $0) }
+                        ForEach(sheets) { sheet in
+                            NavigationLink(value: sheet) {
+                                SheetRow(sheet: sheet)
                             }
-                        }
-                        if !simpleSheets.isEmpty {
-                            Section("Schede") {
-                                ForEach(simpleSheets) { sheet in
-                                    NavigationLink(value: sheet) {
-                                        SheetRow(sheet: sheet)
-                                    }
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    delete(sheet)
+                                } label: {
+                                    Label("Elimina", systemImage: "trash")
                                 }
-                                .onDelete { delete(simpleSheets, at: $0) }
+                                .tint(.red)
+
+                                Button {
+                                    editingSheet = sheet
+                                } label: {
+                                    Label("Modifica", systemImage: "pencil")
+                                }
+                                .tint(Color(hex: "#8A6BC1"))
                             }
                         }
                     }
                 }
             }
             .navigationTitle("Schede")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: ExerciseSheet.self) { sheet in
-                SheetDetailView(sheet: sheet)
+                SheetOutlineView(sheet: sheet)
             }
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button { creating = true } label: {
-                        Label("Nuova scheda", systemImage: "plus")
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: startCreatingSheet) {
+                        Image(systemName: "plus")
                     }
-                    .disabled(templates.isEmpty)
                 }
             }
-            .sheet(isPresented: $creating) {
-                NewSheetFlowView()
+            .sheet(item: $creatingSheet) { sheet in
+                NavigationStack {
+                    SheetDetailView(
+                        sheet: sheet,
+                        isNew: true,
+                        onCancel: {
+                            context.delete(sheet)
+                            creatingSheet = nil
+                        },
+                        onFinish: { creatingSheet = nil }
+                    )
+                }
+                .interactiveDismissDisabled()
+            }
+            .sheet(item: $editingSheet) { sheet in
+                NavigationStack {
+                    SheetDetailView(
+                        sheet: sheet,
+                        onFinish: { editingSheet = nil }
+                    )
+                }
+            }
+            .sheet(item: $creatingTemplate) { template in
+                TemplateEditorView(template: template, isNew: true)
+            }
+            .alert("Nessun modello configurato", isPresented: $showingNoTemplateAlert) {
+                Button("Annulla", role: .cancel) {}
+                Button("Crea modello", action: startCreatingTemplate)
+            } message: {
+                Text("Prima di creare una scheda devi configurare almeno un modello. Vuoi procedere con la creazione di un modello adesso?")
             }
         }
     }
 
-    private func delete(_ list: [ExerciseSheet], at offsets: IndexSet) {
-        for index in offsets { context.delete(list[index]) }
+    private func startCreatingSheet() {
+        if templates.isEmpty {
+            showingNoTemplateAlert = true
+        } else {
+            let sheet = ExerciseSheet(name: "", template: templates.first)
+            context.insert(sheet)
+            creatingSheet = sheet
+        }
+    }
+
+    private func startCreatingTemplate() {
+        let template = Template(name: "")
+        context.insert(template)
+        creatingTemplate = template
+    }
+
+    private func delete(_ sheet: ExerciseSheet) {
+        context.delete(sheet)
     }
 }
 
@@ -98,17 +140,15 @@ private struct SheetRow: View {
 
     private var subtitle: String {
         var parts: [String] = []
-        if sheet.isProgram {
-            parts.append("\(sheet.weeksStorage.count) settimane")
-            if let start = sheet.startDate, let end = sheet.endDate {
-                parts.append("\(Formatters.dayMonth.string(from: start)) – \(Formatters.dayMonth.string(from: end))")
-            }
+        if sheet.isGrouped {
+            let count = sheet.groupsStorage.count
+            parts.append(count == 1 ? "1 gruppo" : "\(count) gruppi")
         } else {
-            let count = sheet.weeks.first?.exercisesStorage.count ?? 0
+            let count = sheet.exerciseCount
             parts.append(count == 1 ? "1 esercizio" : "\(count) esercizi")
-            if sheet.totalDurationSeconds > 0 {
-                parts.append(Formatters.compact(sheet.totalDurationSeconds))
-            }
+        }
+        if sheet.totalDurationSeconds > 0 {
+            parts.append(Formatters.compact(sheet.totalDurationSeconds))
         }
         return parts.joined(separator: " · ")
     }

@@ -63,7 +63,6 @@ struct TemplateEditorView: View {
                 Section {
                     Toggle("Avanzamento automatico", isOn: $template.autoAdvanceByDefault)
                     DurationPicker(title: "Durata predefinita", seconds: $template.defaultDurationSeconds)
-                    DurationPicker(title: "Pausa predefinita", seconds: $template.defaultRestSeconds)
                 } header: {
                     Text("Impostazioni pratica")
                 } footer: {
@@ -91,7 +90,7 @@ struct TemplateEditorView: View {
     private func addCategory() {
         let category = TemplateCategory(
             name: "",
-            colorHex: Palette.swatches[template.categoriesStorage.count % Palette.swatches.count],
+            colorHex: Palette.swatches[template.categoriesStorage.count % Palette.swatches.count].hex,
             sortIndex: template.categoriesStorage.count
         )
         category.template = template
@@ -156,11 +155,15 @@ private struct CategoryRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Menu {
-                ForEach(Palette.swatches, id: \.self) { hex in
+                ForEach(Palette.swatches) { swatch in
                     Button {
-                        category.colorHex = hex
+                        category.colorHex = swatch.hex
                     } label: {
-                        Label(hex, systemImage: "circle.fill")
+                        Label {
+                            Text(swatch.name)
+                        } icon: {
+                            swatch.dotImage
+                        }
                     }
                 }
             } label: {
@@ -227,19 +230,20 @@ private struct ColorSwatchRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            ForEach(Palette.swatches, id: \.self) { hex in
+            ForEach(Palette.swatches) { swatch in
                 Button {
-                    selection = hex
+                    selection = swatch.hex
                 } label: {
                     Circle()
-                        .fill(Color(hex: hex))
+                        .fill(swatch.color)
                         .frame(width: 28, height: 28)
                         .overlay(
                             Circle()
-                                .strokeBorder(Color.primary, lineWidth: selection == hex ? 2 : 0)
+                                .strokeBorder(Color.primary, lineWidth: selection == swatch.hex ? 2 : 0)
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(swatch.name)
             }
         }
         .padding(.vertical, 2)

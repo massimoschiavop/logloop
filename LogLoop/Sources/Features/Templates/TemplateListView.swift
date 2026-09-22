@@ -8,51 +8,49 @@ struct TemplateListView: View {
     @State private var editingIsNew = false
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if templates.isEmpty {
-                    EmptyStateView(
-                        icon: "square.stack.3d.up",
-                        title: "Nessun modello",
-                        message: "Un modello definisce le categorie e i campi extra usati dalle tue schede.",
-                        actionTitle: "Crea modello",
-                        action: createTemplate
-                    )
-                } else {
-                    List {
-                        ForEach(templates) { template in
-                            Button { edit(template) } label: {
-                                TemplateRow(template: template)
+        Group {
+            if templates.isEmpty {
+                EmptyStateView(
+                    icon: "square.stack.3d.up",
+                    title: "Nessun modello",
+                    message: "Un modello definisce le categorie e i campi extra usati dalle tue schede."
+                )
+            } else {
+                List {
+                    ForEach(templates) { template in
+                        Button { edit(template) } label: {
+                            TemplateRow(template: template)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions {
+                            Button(role: .destructive) {
+                                context.delete(template)
+                            } label: {
+                                Label("Elimina", systemImage: "trash")
                             }
-                            .buttonStyle(.plain)
-                            .swipeActions {
-                                Button(role: .destructive) {
-                                    context.delete(template)
-                                } label: {
-                                    Label("Elimina", systemImage: "trash")
-                                }
-                                Button {
-                                    duplicate(template)
-                                } label: {
-                                    Label("Duplica", systemImage: "doc.on.doc")
-                                }
-                                .tint(.indigo)
+                            .tint(.red)
+                            Button {
+                                duplicate(template)
+                            } label: {
+                                Label("Duplica", systemImage: "doc.on.doc")
                             }
+                            .tint(.indigo)
                         }
                     }
                 }
             }
-            .navigationTitle("Modelli")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: createTemplate) {
-                        Label("Nuovo modello", systemImage: "plus")
-                    }
+        }
+        .navigationTitle("Modelli")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: createTemplate) {
+                    Image(systemName: "plus")
                 }
             }
-            .sheet(item: $editing) { template in
-                TemplateEditorView(template: template, isNew: editingIsNew)
-            }
+        }
+        .sheet(item: $editing) { template in
+            TemplateEditorView(template: template, isNew: editingIsNew)
         }
     }
 
@@ -74,8 +72,7 @@ struct TemplateListView: View {
             iconName: template.iconName,
             colorHex: template.colorHex,
             autoAdvanceByDefault: template.autoAdvanceByDefault,
-            defaultDurationSeconds: template.defaultDurationSeconds,
-            defaultRestSeconds: template.defaultRestSeconds
+            defaultDurationSeconds: template.defaultDurationSeconds
         )
         copy.categoriesStorage = template.categories.map {
             TemplateCategory(name: $0.name, colorHex: $0.colorHex, sortIndex: $0.sortIndex)

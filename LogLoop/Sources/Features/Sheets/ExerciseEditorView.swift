@@ -1,23 +1,47 @@
 import SwiftData
 import SwiftUI
 
+/// Modifica un esercizio su una bozza locale: i valori vengono scritti sul modello SwiftData
+/// solo al salvataggio, non a ogni keystroke. Scrivere live su un `@Bindable` del modello
+/// mentre lo sheet è aperto propagava le modifiche alle collezioni derivate osservate dalla
+/// riga che presenta lo sheet stesso (gruppo/sottogruppo), causando un dismiss/represent
+/// involontario del modale (sheet che "sparisce e riappare").
 struct ExerciseEditorView: View {
-    @Bindable var exercise: Exercise
+    let exercise: Exercise
     let template: Template?
     let isNew: Bool
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @State private var usesCustomRest = false
-    @State private var customRest = 60
+
+    @State private var name: String
+    @State private var category: TemplateCategory?
+    @State private var durationSeconds: Int
+    @State private var notes: String
+    @State private var fieldValues: [UUID: String]
+
+    init(exercise: Exercise, template: Template?, isNew: Bool) {
+        self.exercise = exercise
+        self.template = template
+        self.isNew = isNew
+        _name = State(initialValue: exercise.name)
+        _category = State(initialValue: exercise.category)
+        _durationSeconds = State(initialValue: exercise.durationSeconds)
+        _notes = State(initialValue: exercise.notes)
+        var values: [UUID: String] = [:]
+        for value in exercise.fieldValues {
+            values[value.definitionID] = value.stringValue
+        }
+        _fieldValues = State(initialValue: values)
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Esercizio") {
-                    TextField("Nome", text: $exercise.name)
+                    TextField("Nome", text: $name)
                     if let template, !template.categories.isEmpty {
-                        Picker("Categoria", selection: $exercise.category) {
+                        Picker("Categoria", selection: $category) {
                             ForEach(template.categories) { category in
                                 Text(category.name).tag(Optional(category))
                             }
@@ -27,20 +51,7 @@ struct ExerciseEditorView: View {
                 }
 
                 Section("Durata") {
-                    DurationPicker(title: "Durata", seconds: $exercise.durationSeconds)
-                }
-
-                Section {
-                    Toggle("Pausa personalizzata", isOn: $usesCustomRest.animation())
-                    if usesCustomRest {
-                        DurationPicker(title: "Pausa", seconds: $customRest)
-                    }
-                } header: {
-                    Text("Pausa dopo l'esercizio")
-                } footer: {
-                    Text(usesCustomRest
-                        ? "Vale solo per questo esercizio."
-                        : "Usa la pausa predefinita del modello: \(Formatters.clock(template?.defaultRestSeconds ?? 0)).")
+                    DurationPicker(title: "Durata", seconds: $durationSeconds)
                 }
 
                 if let template, !template.fields.isEmpty {
@@ -55,7 +66,7 @@ struct ExerciseEditorView: View {
                 }
 
                 Section("Note") {
-                    TextField("Note", text: $exercise.notes, axis: .vertical)
+                    TextField("Note", text: $notes, axis: .vertical)
                         .lineLimit(2...5)
                 }
             }
@@ -67,15 +78,7 @@ struct ExerciseEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Fine", action: save)
-                        .disabled(exercise.name.trimmed.isEmpty)
-                }
-            }
-            .onAppear {
-                if let rest = exercise.restSeconds {
-                    usesCustomRest = true
-                    customRest = rest
-                } else {
-                    customRest = template?.defaultRestSeconds ?? 60
+                        .disabled(name.trimmed.isEmpty)
                 }
             }
         }
@@ -84,21 +87,25 @@ struct ExerciseEditorView: View {
 
     private func binding(for definition: FieldDefinition) -> Binding<String> {
         Binding(
-            get: { exercise.value(for: definition)?.stringValue ?? "" },
-            set: { newValue in
-                if let existing = exercise.value(for: definition) {
-                    existing.stringValue = newValue
-                } else {
-                    let value = FieldValue(definition: definition, stringValue: newValue)
-                    value.exercise = exercise
-                    context.insert(value)
-                }
-            }
+            get: { fieldValues[definition.identifier] ?? "" },
+            set: { fieldValues[definition.identifier] = $0 }
         )
     }
 
     private func save() {
-        exercise.restSeconds = usesCustomRest ? customRest : nil
+        exercise.name = name
+        exercise.category = category
+        exercise.durationSeconds = durationSeconds
+        exercise.notes = notes
+        for (definitionID, stringValue) in fieldValues {
+            if let existing = exercise.fieldValues.first(where: { $0.definitionID == definitionID }) {
+                existing.stringValue = stringValue
+            } else if let definition = template?.fields.first(where: { $0.identifier == definitionID }) {
+                let value = FieldValue(definition: definition, stringValue: stringValue)
+                value.exercise = exercise
+                context.insert(value)
+            }
+        }
         dismiss()
     }
 

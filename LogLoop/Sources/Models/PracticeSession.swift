@@ -6,16 +6,14 @@ final class PracticeSession {
     var startedAt: Date = Date()
     var endedAt: Date?
     var totalActiveSeconds: Int = 0
-    var weekNumber: Int = 1
     var sheetNameSnapshot: String = ""
     var sheet: ExerciseSheet?
 
     @Relationship(deleteRule: .cascade, inverse: \SessionEntry.session)
     var entriesStorage: [SessionEntry] = []
 
-    init(sheet: ExerciseSheet?, weekNumber: Int, sheetNameSnapshot: String, startedAt: Date = Date()) {
+    init(sheet: ExerciseSheet?, sheetNameSnapshot: String, startedAt: Date = Date()) {
         self.sheet = sheet
-        self.weekNumber = weekNumber
         self.sheetNameSnapshot = sheetNameSnapshot
         self.startedAt = startedAt
     }

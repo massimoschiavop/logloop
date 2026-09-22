@@ -25,13 +25,6 @@ enum Formatters {
         return "\(minutes) min"
     }
 
-    static let dayMonth: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "it_IT")
-        formatter.dateFormat = "d MMM"
-        return formatter
-    }()
-
     static let fullDate: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "it_IT")

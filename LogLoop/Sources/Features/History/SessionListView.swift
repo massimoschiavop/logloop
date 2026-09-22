@@ -50,6 +50,7 @@ struct SessionListView: View {
                 }
             }
             .navigationTitle("Storico")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: PracticeSession.self) { session in
                 SessionDetailView(session: session)
             }

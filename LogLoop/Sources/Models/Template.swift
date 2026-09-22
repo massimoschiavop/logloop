@@ -9,7 +9,6 @@ final class Template {
     var createdAt: Date = Date()
     var autoAdvanceByDefault: Bool = true
     var defaultDurationSeconds: Int = 300
-    var defaultRestSeconds: Int = 0
 
     @Relationship(deleteRule: .cascade, inverse: \TemplateCategory.template)
     var categoriesStorage: [TemplateCategory] = []
@@ -25,8 +24,7 @@ final class Template {
         iconName: String = "square.stack.3d.up",
         colorHex: String = "#5254D9",
         autoAdvanceByDefault: Bool = true,
-        defaultDurationSeconds: Int = 300,
-        defaultRestSeconds: Int = 0
+        defaultDurationSeconds: Int = 300
     ) {
         self.name = name
         self.iconName = iconName
@@ -34,7 +32,6 @@ final class Template {
         self.createdAt = Date()
         self.autoAdvanceByDefault = autoAdvanceByDefault
         self.defaultDurationSeconds = defaultDurationSeconds
-        self.defaultRestSeconds = defaultRestSeconds
     }
 
     var categories: [TemplateCategory] {

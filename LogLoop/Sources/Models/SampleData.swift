@@ -18,8 +18,7 @@ enum SampleData {
             iconName: "pianokeys",
             colorHex: "#5254D9",
             autoAdvanceByDefault: true,
-            defaultDurationSeconds: 600,
-            defaultRestSeconds: 0
+            defaultDurationSeconds: 600
         )
         template.categoriesStorage = [
             TemplateCategory(name: "Duvernoy", colorHex: "#5254D9", sortIndex: 0),
@@ -45,8 +44,7 @@ enum SampleData {
             iconName: "figure.strengthtraining.traditional",
             colorHex: "#C4622D",
             autoAdvanceByDefault: false,
-            defaultDurationSeconds: 60,
-            defaultRestSeconds: 60
+            defaultDurationSeconds: 60
         )
         template.categoriesStorage = [
             TemplateCategory(name: "Gambe", colorHex: "#2E9E7A", sortIndex: 0),
