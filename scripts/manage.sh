@@ -273,7 +273,7 @@ trap 'print' INT
 
 while true; do
   show_menu
-  read "choice?   Scelta › " || break
+  read "choice?   Scelta : " || break
   case "$choice" in
     1) run_action "📱  Simulatore" run_on_simulator ;;
     2) run_action "📲  Telefono" run_on_phone ;;
