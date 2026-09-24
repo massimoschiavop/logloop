@@ -26,10 +26,12 @@
 		A5FD2282D544721F57D65601 /* TemplateCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 948EB55F2231324AAAF62788 /* TemplateCategory.swift */; };
 		AAE5C3ACB8BE98BF27784579 /* CategoryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 143CB74738A301E05172C0B7 /* CategoryRow.swift */; };
 		AC4C589EA707998F878C1F9D /* TemplateIconTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A5B02F2D8449DB83268045B /* TemplateIconTile.swift */; };
+		B5636B3209106B68DC3E1702 /* Weekday.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0F2BCF5226D957356513D3 /* Weekday.swift */; };
 		B6E5F8A610DCED60064EA13B /* SheetListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E030781E97B42BFC57308FB /* SheetListView.swift */; };
 		C9B48EF15496A8FCA23CD70C /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23B461AB21E83DFF55E4F640 /* Color+Hex.swift */; };
 		CB1E08373017FDE201BE82C2 /* SheetEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BB7A0BD1A51CD7E9CF2EE5 /* SheetEditorView.swift */; };
 		CD7C0DB72FBA67163C7AF14B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C15314EB0C35E3EAC6D7DD5 /* SettingsView.swift */; };
+		E013618B12AE1187C0685161 /* WeekdayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B87086A6EC20DF8423B1148 /* WeekdayRow.swift */; };
 		E17D96B6AF0B026E1243169F /* LogLoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13AFA79D52E728312076A2E /* LogLoopApp.swift */; };
 		F0AEC4BCCB6EEF31D669E432 /* ColorSwatchRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669EA247D1BA70E656C767CF /* ColorSwatchRow.swift */; };
 		F8E0CEB254E8C56B19B68A4F /* TemplateListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 941A86EF9C86E3A9EC23AA32 /* TemplateListView.swift */; };
@@ -38,6 +40,7 @@
 /* Begin PBXFileReference section */
 		0A126504BCA37E3AFD266A9C /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		143CB74738A301E05172C0B7 /* CategoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRow.swift; sourceTree = "<group>"; };
+		1B87086A6EC20DF8423B1148 /* WeekdayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekdayRow.swift; sourceTree = "<group>"; };
 		23B461AB21E83DFF55E4F640 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		2C15314EB0C35E3EAC6D7DD5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		442B83834CC48A3D5F205EBD /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
@@ -63,6 +66,7 @@
 		F13AFA79D52E728312076A2E /* LogLoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogLoopApp.swift; sourceTree = "<group>"; };
 		F9D2AE7A20C9353BB99E6DBD /* Sortable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sortable.swift; sourceTree = "<group>"; };
 		FC4B1782A6D5BAAF45F9669F /* LogLoop.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LogLoop.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FF0F2BCF5226D957356513D3 /* Weekday.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weekday.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -85,9 +89,18 @@
 				F9D2AE7A20C9353BB99E6DBD /* Sortable.swift */,
 				9A856DE74CBFED3958063ED4 /* Template.swift */,
 				948EB55F2231324AAAF62788 /* TemplateCategory.swift */,
+				FF0F2BCF5226D957356513D3 /* Weekday.swift */,
 				36A833C4DEBA69860F1E5840 /* Persistence */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		2CAD8D510C2CF6825E50B5CC /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				1B87086A6EC20DF8423B1148 /* WeekdayRow.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		2D33C9A2EEF44B8A896F4F67 /* App */ = {
@@ -132,6 +145,7 @@
 				77BB7A0BD1A51CD7E9CF2EE5 /* SheetEditorView.swift */,
 				9E030781E97B42BFC57308FB /* SheetListView.swift */,
 				A3A9C478455C8F3F4CC87BB6 /* SheetSortOrder.swift */,
+				2CAD8D510C2CF6825E50B5CC /* Components */,
 			);
 			path = Sheets;
 			sourceTree = "<group>";
@@ -315,6 +329,8 @@
 				96CEDE487913A9ABF6BF7F82 /* TemplateEditorView.swift in Sources */,
 				AC4C589EA707998F878C1F9D /* TemplateIconTile.swift in Sources */,
 				F8E0CEB254E8C56B19B68A4F /* TemplateListView.swift in Sources */,
+				B5636B3209106B68DC3E1702 /* Weekday.swift in Sources */,
+				E013618B12AE1187C0685161 /* WeekdayRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

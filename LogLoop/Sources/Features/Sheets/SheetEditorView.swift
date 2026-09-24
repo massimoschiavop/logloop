@@ -12,12 +12,20 @@ struct SheetEditorView: View {
     @State private var title = ""
     /// Proposto il primo modello della lista; senza modello non si può salvare.
     @State private var template: Template?
+    @State private var showsWeeks: Bool
+    @State private var weekCount: Int
+    @State private var showsDays: Bool
+    @State private var weekdays: Set<Weekday>
     @FocusState private var isTitleFocused: Bool
 
     init(sheet: Sheet? = nil) {
         self.sheet = sheet
         _title = State(initialValue: sheet?.title ?? "")
         _template = State(initialValue: sheet?.template)
+        _showsWeeks = State(initialValue: sheet?.showsWeeks ?? false)
+        _weekCount = State(initialValue: sheet?.weekCount ?? 4)
+        _showsDays = State(initialValue: sheet?.showsDays ?? false)
+        _weekdays = State(initialValue: sheet?.weekdays ?? Set(Weekday.allCases))
     }
 
     var body: some View {
@@ -58,10 +66,23 @@ struct SheetEditorView: View {
             } footer: {
                 Text("Il modello definisce le categorie e i campi della scheda. I modelli si gestiscono in Impostazioni.")
             }
+
+            Section {
+                Toggle("Mostra settimane", isOn: $showsWeeks.animation())
+                if showsWeeks {
+                    Stepper(value: $weekCount, in: 1...52) {
+                        LabeledContent("Numero di settimane", value: "\(weekCount)")
+                    }
+                }
+                Toggle("Mostra giorni", isOn: $showsDays.animation())
+                if showsDays {
+                    WeekdayRow(selection: $weekdays)
+                }
+            }
         }
         .navigationTitle(sheet == nil ? "Nuova scheda" : "Modifica scheda")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmToolbarItem(isEnabled: !title.trimmed.isEmpty && template != nil, action: save)
+        .confirmToolbarItem(isEnabled: canSave, action: save)
         .onAppear {
             // onAppear scatta anche al ritorno dalla scelta del modello: la proposta vale
             // solo la prima volta.
@@ -72,16 +93,28 @@ struct SheetEditorView: View {
         }
     }
 
+    /// Servono titolo e modello; con i giorni attivi almeno un giorno selezionato.
+    private var canSave: Bool {
+        !title.trimmed.isEmpty && template != nil && (!showsDays || !weekdays.isEmpty)
+    }
+
     private func save() {
         guard let template else { return }
+        let target: Sheet
         if let sheet {
-            sheet.title = title.trimmed
-            sheet.template = template
+            target = sheet
+            target.title = title.trimmed
+            target.template = template
         } else {
             // Le nuove schede vanno in fondo all'ordine manuale.
             let count = (try? context.fetchCount(FetchDescriptor<Sheet>())) ?? 0
-            context.insert(Sheet(title: title.trimmed, template: template, sortIndex: count))
+            target = Sheet(title: title.trimmed, template: template, sortIndex: count)
+            context.insert(target)
         }
+        target.showsWeeks = showsWeeks
+        target.weekCount = weekCount
+        target.showsDays = showsDays
+        target.weekdays = weekdays
         try? context.save()
         dismiss()
     }
