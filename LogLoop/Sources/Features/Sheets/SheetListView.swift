@@ -109,7 +109,10 @@ private struct SheetRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            TemplateIconTile(iconName: sheet.template?.iconName ?? Template.defaultIcon)
+            TemplateIconTile(
+                iconName: sheet.template?.iconName ?? Template.defaultIcon,
+                colorHex: sheet.template?.colorHex ?? Palette.defaultColor.hex
+            )
             VStack(alignment: .leading, spacing: 2) {
                 Text(sheet.title)
                 Text(sheet.template?.name ?? "Nessun modello")

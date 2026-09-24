@@ -8,7 +8,7 @@ struct PaletteColor: Identifiable, Hashable {
     var color: Color { Color(hex: hex) }
 }
 
-/// Colori selezionabili per le categorie.
+/// Colori selezionabili per i modelli e le categorie.
 enum Palette {
     static let terracotta = PaletteColor(hex: "#C4622D", name: "Terracotta")
     static let ochre = PaletteColor(hex: "#C79A28", name: "Ocra")

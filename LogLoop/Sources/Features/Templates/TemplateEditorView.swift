@@ -40,7 +40,7 @@ private struct TemplateEditorView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    /// Il campo aperto nel dettaglio, controllato al ritorno nell'editor.
+    /// Il campo aperto nel dettaglio, mostrato in un foglio dal basso.
     @State private var editingField: FieldDefinition?
     /// La categoria appena creata con "+": se perde il focus senza un nome viene scartata.
     @State private var newCategoryID: UUID?
@@ -56,8 +56,9 @@ private struct TemplateEditorView: View {
                 TextField("Es. Pianoforte", text: $template.name)
             }
 
-            Section("Icona") {
-                IconGrid(selection: $template.iconName)
+            Section("Aspetto") {
+                IconGrid(selection: $template.iconName, tint: Color(hex: template.colorHex))
+                ColorSwatchRow(selection: $template.colorHex)
             }
 
             categoriesSection
@@ -66,11 +67,13 @@ private struct TemplateEditorView: View {
         .navigationTitle(isNew ? "Nuovo modello" : "Modifica modello")
         .navigationBarTitleDisplayMode(.inline)
         .confirmToolbarItem(isEnabled: !template.name.trimmed.isEmpty, action: save)
-        .onAppear {
-            // Tornando dal dettaglio con il nome svuotato il campo viene scartato, come
+        .sheet(item: $editingField) { field in
+            // Chiudendo il foglio con il nome svuotato il campo viene scartato, come
             // quando si lascia vuoto il nome di un campo appena aggiunto.
-            if let field = editingField {
-                editingField = nil
+            NavigationStack {
+                FieldDefinitionEditorView(field: field)
+            }
+            .onDisappear {
                 if field.name.trimmed.isEmpty { template.removeField(field) }
             }
         }
@@ -132,11 +135,15 @@ private struct TemplateEditorView: View {
                 Image(systemName: field.kind.systemImage)
             }
         } else {
-            NavigationLink {
-                FieldDefinitionEditorView(field: field)
-                    .onAppear { editingField = field }
+            Button {
+                editingField = field
             } label: {
-                Label(field.name, systemImage: field.kind.systemImage)
+                Label {
+                    Text(field.name)
+                        .foregroundStyle(Color.primary)
+                } icon: {
+                    Image(systemName: field.kind.systemImage)
+                }
             }
         }
     }

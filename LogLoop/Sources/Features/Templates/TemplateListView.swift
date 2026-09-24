@@ -91,7 +91,7 @@ private struct TemplateRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            TemplateIconTile(iconName: template.iconName)
+            TemplateIconTile(iconName: template.iconName, colorHex: template.colorHex)
             VStack(alignment: .leading, spacing: 2) {
                 Text(template.name.isEmpty ? "Senza nome" : template.name)
                 Text(subtitle)

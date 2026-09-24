@@ -19,6 +19,7 @@ final class Template: Sortable {
 
     var name: String = ""
     var iconName: String = Template.defaultIcon
+    var colorHex: String = Palette.defaultColor.hex
     var createdAt: Date = Date()
     var sortIndex: Int = 0
 
@@ -34,9 +35,15 @@ final class Template: Sortable {
     @Relationship(deleteRule: .nullify, inverse: \Sheet.template)
     var sheets: [Sheet] = []
 
-    init(name: String, iconName: String = Template.defaultIcon, sortIndex: Int = 0) {
+    init(
+        name: String,
+        iconName: String = Template.defaultIcon,
+        colorHex: String = Palette.defaultColor.hex,
+        sortIndex: Int = 0
+    ) {
         self.name = name
         self.iconName = iconName
+        self.colorHex = colorHex
         self.sortIndex = sortIndex
         self.createdAt = Date()
     }
@@ -46,7 +53,12 @@ final class Template: Sortable {
 
     /// Una copia completa di categorie e campi, non ancora inserita in alcun contesto.
     func duplicate(sortIndex: Int) -> Template {
-        let copy = Template(name: "\(name) (copia)", iconName: iconName, sortIndex: sortIndex)
+        let copy = Template(
+            name: "\(name) (copia)",
+            iconName: iconName,
+            colorHex: colorHex,
+            sortIndex: sortIndex
+        )
         copy.categoriesStorage = categories.map { $0.copy() }
         copy.fieldsStorage = fields.map { $0.copy() }
         return copy

@@ -3,6 +3,8 @@ import SwiftUI
 /// Griglia per scegliere l'icona di un modello.
 struct IconGrid: View {
     @Binding var selection: String
+    /// Il colore del modello, usato per evidenziare l'icona scelta.
+    let tint: Color
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 6)
 
@@ -18,7 +20,7 @@ struct IconGrid: View {
                         .frame(width: 40, height: 40)
                         .foregroundStyle(isSelected ? Color.white : Color.primary)
                         .background(
-                            isSelected ? Color.accentColor : Color.secondary.opacity(0.12),
+                            isSelected ? tint : Color.secondary.opacity(0.12),
                             in: RoundedRectangle(cornerRadius: 9)
                         )
                 }
