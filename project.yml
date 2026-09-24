@@ -18,13 +18,11 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        UIBackgroundModes:
-          - audio
         ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.massimoschiavo.logloop
-        DEVELOPMENT_TEAM: "ELD4A89N37"
+        DEVELOPMENT_TEAM: "3Q9W5CC298"
         CODE_SIGN_STYLE: Automatic
         SWIFT_VERSION: 5.0
         TARGETED_DEVICE_FAMILY: "1"

@@ -6,88 +6,105 @@ struct TemplateEditorView: View {
     let isNew: Bool
 
     @Environment(\.modelContext) private var context
-    @Environment(\.dismiss) private var dismiss
+    /// Il campo extra aperto nel dettaglio: finché è valorizzato, l'uscita dall'editor
+    /// è solo apparente (onDisappear scatta anche aprendo il dettaglio).
     @State private var editingField: FieldDefinition?
+    @FocusState private var focusedCategoryID: UUID?
+    /// La categoria appena creata con "+": se perde il focus senza un nome viene scartata.
+    @State private var newCategoryID: UUID?
+    /// Il campo appena creato con "+", modificabile inline nel solo nome finché ha il focus;
+    /// tipo e opzioni si impostano poi nel dettaglio, toccando la riga.
+    @State private var inlineFieldID: UUID?
+    @FocusState private var focusedFieldID: UUID?
+    /// Nome del modello esistente all'apertura, ripristinato se si esce lasciandolo vuoto.
+    @State private var originalName: String?
 
+    /// Le modifiche valgono subito (come nelle Impostazioni di iOS) e vengono sistemate
+    /// uscendo con "indietro".
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Nome") {
-                    TextField("Es. Pianoforte", text: $template.name)
+        Form {
+            Section("Nome") {
+                TextField("Es. Pianoforte", text: $template.name)
+            }
+
+            Section("Icona") {
+                IconGrid(selection: $template.iconName)
+            }
+
+            Section {
+                ForEach(template.categories) { category in
+                    CategoryRow(category: category, focusedCategoryID: $focusedCategoryID)
+                        .swipeToDelete { deleteCategory(category) }
                 }
+                .onMove(perform: moveCategories)
 
-                Section("Aspetto") {
-                    IconGrid(selection: $template.iconName, tint: Color(hex: template.colorHex))
-                    ColorSwatchRow(selection: $template.colorHex)
-                }
+                Button("Aggiungi categoria", systemImage: "plus.circle.fill", action: addCategory)
+            } header: {
+                Text("Categorie")
+            } footer: {
+                Text("Le categorie raggruppano le attività nelle schede create da questo modello.")
+            }
 
-                Section {
-                    ForEach(template.categories) { category in
-                        CategoryRow(category: category)
-                    }
-                    .onDelete(perform: deleteCategories)
-                    .onMove(perform: moveCategories)
-
-                    Button {
-                        addCategory()
-                    } label: {
-                        Label("Aggiungi categoria", systemImage: "plus.circle.fill")
-                    }
-                } header: {
-                    Text("Categorie")
-                } footer: {
-                    Text("Le categorie raggruppano gli esercizi nelle schede create da questo modello.")
-                }
-
-                Section {
-                    ForEach(template.fields) { field in
-                        Button { editingField = field } label: {
-                            FieldRow(field: field)
+            Section {
+                ForEach(template.fields) { field in
+                    Group {
+                        if field.identifier == inlineFieldID {
+                            Label {
+                                TextField("Nome campo", text: Bindable(field).name)
+                                    .focused($focusedFieldID, equals: field.identifier)
+                                    .submitLabel(.done)
+                                    .onSubmit { focusedFieldID = nil }
+                            } icon: {
+                                Image(systemName: field.kind.systemImage)
+                            }
+                        } else {
+                            NavigationLink {
+                                FieldDefinitionEditorView(field: field)
+                                    .onAppear { editingField = field }
+                            } label: {
+                                Label(field.name, systemImage: field.kind.systemImage)
+                            }
                         }
-                        .buttonStyle(.plain)
                     }
-                    .onDelete(perform: deleteFields)
-                    .onMove(perform: moveFields)
+                    .swipeToDelete { deleteField(field) }
+                }
+                .onMove(perform: moveFields)
 
-                    Button {
-                        addField()
-                    } label: {
-                        Label("Aggiungi campo", systemImage: "plus.circle.fill")
-                    }
-                } header: {
-                    Text("Campi extra")
-                } footer: {
-                    Text("Informazioni aggiuntive da compilare per ogni esercizio, oltre alla durata.")
-                }
-
-                Section {
-                    Toggle("Avanzamento automatico", isOn: $template.autoAdvanceByDefault)
-                    DurationPicker(title: "Durata predefinita", seconds: $template.defaultDurationSeconds)
-                } header: {
-                    Text("Impostazioni pratica")
-                } footer: {
-                    Text("Valori di partenza per le schede di questo modello. L'avanzamento automatico resta modificabile durante la sessione.")
-                }
-            }
-            .navigationTitle(isNew ? "Nuovo modello" : "Modifica modello")
-            .navigationBarTitleDisplayMode(.inline)
-            .environment(\.editMode, .constant(.active))
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annulla", action: cancel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fine", action: save).disabled(template.name.trimmed.isEmpty)
-                }
-            }
-            .sheet(item: $editingField) { field in
-                FieldDefinitionEditorView(field: field)
+                Button("Aggiungi campo", systemImage: "plus.circle.fill", action: addField)
+            } header: {
+                Text("Campi")
+            } footer: {
+                Text("Informazioni aggiuntive da compilare per ogni attività.")
             }
         }
-        .interactiveDismissDisabled()
+        .navigationTitle(isNew ? "Nuovo modello" : "Modifica modello")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if originalName == nil { originalName = template.name }
+            // Tornando dal dettaglio con il nome svuotato il campo viene scartato, come
+            // quando si lascia vuoto il nome di un campo appena aggiunto.
+            if let field = editingField {
+                editingField = nil
+                if field.name.trimmed.isEmpty { deleteField(field) }
+            }
+        }
+        .onDisappear {
+            if editingField == nil { finishEditing() }
+        }
+        .onChange(of: focusedCategoryID) { _, focused in
+            if let id = newCategoryID, focused != id {
+                finishNewCategoryEditing(id)
+            }
+        }
+        .onChange(of: focusedFieldID) { _, focused in
+            if focused == nil, inlineFieldID != nil {
+                finishInlineFieldEditing()
+            }
+        }
     }
 
     private func addCategory() {
+        if let id = newCategoryID { finishNewCategoryEditing(id) }
         let category = TemplateCategory(
             name: "",
             colorHex: Palette.swatches[template.categoriesStorage.count % Palette.swatches.count].hex,
@@ -95,19 +112,39 @@ struct TemplateEditorView: View {
         )
         category.template = template
         context.insert(category)
+        newCategoryID = category.identifier
+        focusedCategoryID = category.identifier
     }
 
     private func addField() {
         let field = FieldDefinition(name: "", sortIndex: template.fieldsStorage.count)
         field.template = template
         context.insert(field)
-        editingField = field
+        inlineFieldID = field.identifier
+        focusedFieldID = field.identifier
     }
 
-    private func deleteCategories(at offsets: IndexSet) {
+    private func finishNewCategoryEditing(_ id: UUID) {
+        if let category = template.categories.first(where: { $0.identifier == id }),
+           category.name.trimmed.isEmpty {
+            deleteCategory(category)
+        }
+        newCategoryID = nil
+    }
+
+    private func finishInlineFieldEditing() {
+        if let id = inlineFieldID,
+           let field = template.fields.first(where: { $0.identifier == id }),
+           field.name.trimmed.isEmpty {
+            deleteField(field)
+        }
+        inlineFieldID = nil
+    }
+
+    private func deleteCategory(_ category: TemplateCategory) {
         var list = template.categories
-        for index in offsets { context.delete(list[index]) }
-        list.remove(atOffsets: offsets)
+        list.removeAll { $0.identifier == category.identifier }
+        context.delete(category)
         list.renumber()
     }
 
@@ -117,10 +154,10 @@ struct TemplateEditorView: View {
         list.renumber()
     }
 
-    private func deleteFields(at offsets: IndexSet) {
+    private func deleteField(_ field: FieldDefinition) {
         var list = template.fields
-        for index in offsets { context.delete(list[index]) }
-        list.remove(atOffsets: offsets)
+        list.removeAll { $0.identifier == field.identifier }
+        context.delete(field)
         list.renumber()
     }
 
@@ -130,82 +167,65 @@ struct TemplateEditorView: View {
         list.renumber()
     }
 
-    private func save() {
-        // Scarta le righe lasciate vuote invece di persistere categorie senza nome.
+    /// Uscendo non c'è un "Fine" da disabilitare: un modello nuovo lasciato senza nome viene
+    /// scartato; altrimenti le righe senza nome vengono eliminate e un nome svuotato torna
+    /// quello di partenza.
+    private func finishEditing() {
+        if isNew, template.name.trimmed.isEmpty {
+            context.delete(template)
+            return
+        }
+        if template.name.trimmed.isEmpty, let originalName {
+            template.name = originalName
+        }
         for category in template.categories where category.name.trimmed.isEmpty {
-            context.delete(category)
+            deleteCategory(category)
         }
         for field in template.fields where field.name.trimmed.isEmpty {
-            context.delete(field)
+            deleteField(field)
         }
-        template.categories.renumber()
-        template.fields.renumber()
-        dismiss()
-    }
-
-    private func cancel() {
-        if isNew { context.delete(template) }
-        dismiss()
     }
 }
 
 private struct CategoryRow: View {
     @Bindable var category: TemplateCategory
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Menu {
-                ForEach(Palette.swatches) { swatch in
-                    Button {
-                        category.colorHex = swatch.hex
-                    } label: {
-                        Label {
-                            Text(swatch.name)
-                        } icon: {
-                            swatch.dotImage
-                        }
-                    }
-                }
-            } label: {
-                Circle()
-                    .fill(Color(hex: category.colorHex))
-                    .frame(width: 22, height: 22)
-            }
-            TextField("Nome categoria", text: $category.name)
-        }
-    }
-}
-
-private struct FieldRow: View {
-    let field: FieldDefinition
+    var focusedCategoryID: FocusState<UUID?>.Binding
 
     var body: some View {
         HStack {
-            Image(systemName: field.kind.systemImage)
-                .foregroundStyle(.secondary)
-                .frame(width: 22)
-            Text(field.name.isEmpty ? "Senza nome" : field.name)
-                .foregroundStyle(.primary)
-            Spacer()
-            Text(field.kind.label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            TextField("Nome categoria", text: $category.name)
+                .focused(focusedCategoryID, equals: category.identifier)
+                .submitLabel(.done)
+                .onSubmit { focusedCategoryID.wrappedValue = nil }
+            Menu {
+                Picker("Colore", selection: $category.colorHex) {
+                    ForEach(Palette.swatches) { swatch in
+                        Label {
+                            Text(swatch.name)
+                        } icon: {
+                            swatch.color.dotImage
+                        }
+                        .tag(swatch.hex)
+                    }
+                }
+            } label: {
+                Image(systemName: "circle.fill")
+                    .foregroundStyle(Color(hex: category.colorHex))
+                    .imageScale(.large)
+            }
+            .accessibilityLabel("Colore")
         }
     }
 }
 
 private struct IconGrid: View {
     @Binding var selection: String
-    let tint: Color
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 6)
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(Palette.icons, id: \.self) { icon in
+            ForEach(TemplateIcons.all, id: \.self) { icon in
                 Button {
                     selection = icon
                 } label: {
@@ -214,42 +234,14 @@ private struct IconGrid: View {
                         .frame(width: 40, height: 40)
                         .foregroundStyle(selection == icon ? Color.white : Color.primary)
                         .background(
-                            RoundedRectangle(cornerRadius: 9)
-                                .fill(selection == icon ? tint : Color.secondary.opacity(0.12))
+                            selection == icon ? Color.accentColor : Color.secondary.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 9)
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(selection == icon ? .isSelected : [])
             }
         }
         .padding(.vertical, 4)
     }
-}
-
-private struct ColorSwatchRow: View {
-    @Binding var selection: String
-
-    var body: some View {
-        HStack(spacing: 10) {
-            ForEach(Palette.swatches) { swatch in
-                Button {
-                    selection = swatch.hex
-                } label: {
-                    Circle()
-                        .fill(swatch.color)
-                        .frame(width: 28, height: 28)
-                        .overlay(
-                            Circle()
-                                .strokeBorder(Color.primary, lineWidth: selection == swatch.hex ? 2 : 0)
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(swatch.name)
-            }
-        }
-        .padding(.vertical, 2)
-    }
-}
-
-extension String {
-    var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
 }

@@ -4,37 +4,35 @@ import SwiftUI
 struct TemplateListView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Template.createdAt, order: .reverse) private var templates: [Template]
-    @State private var editing: Template?
-    @State private var editingIsNew = false
+    @State private var creating: Template?
 
     var body: some View {
         Group {
             if templates.isEmpty {
-                EmptyStateView(
-                    icon: "square.stack.3d.up",
-                    title: "Nessun modello",
-                    message: "Un modello definisce le categorie e i campi extra usati dalle tue schede."
+                ContentUnavailableView(
+                    "Nessun modello",
+                    systemImage: "square.stack.3d.up",
+                    description: Text("Un modello definisce le categorie e i campi usati dalle tue schede.")
                 )
             } else {
                 List {
                     ForEach(templates) { template in
-                        Button { edit(template) } label: {
+                        NavigationLink {
+                            TemplateEditorView(template: template, isNew: false)
+                        } label: {
                             TemplateRow(template: template)
                         }
-                        .buttonStyle(.plain)
                         .swipeActions {
-                            Button(role: .destructive) {
+                            DeleteButton {
                                 context.delete(template)
-                            } label: {
-                                Label("Elimina", systemImage: "trash")
                             }
-                            .tint(.red)
                             Button {
                                 duplicate(template)
                             } label: {
-                                Label("Duplica", systemImage: "doc.on.doc")
+                                Label("Duplica", systemImage: "plus.square.on.square")
                             }
-                            .tint(.indigo)
+                            .labelStyle(.iconOnly)
+                            .tint(.blue)
                         }
                     }
                 }
@@ -44,36 +42,22 @@ struct TemplateListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(action: createTemplate) {
-                    Image(systemName: "plus")
-                }
+                Button("Nuovo modello", systemImage: "plus", action: createTemplate)
             }
         }
-        .sheet(item: $editing) { template in
-            TemplateEditorView(template: template, isNew: editingIsNew)
+        .navigationDestination(item: $creating) { template in
+            TemplateEditorView(template: template, isNew: true)
         }
     }
 
     private func createTemplate() {
         let template = Template(name: "")
         context.insert(template)
-        editingIsNew = true
-        editing = template
-    }
-
-    private func edit(_ template: Template) {
-        editingIsNew = false
-        editing = template
+        creating = template
     }
 
     private func duplicate(_ template: Template) {
-        let copy = Template(
-            name: "\(template.name) (copia)",
-            iconName: template.iconName,
-            colorHex: template.colorHex,
-            autoAdvanceByDefault: template.autoAdvanceByDefault,
-            defaultDurationSeconds: template.defaultDurationSeconds
-        )
+        let copy = Template(name: "\(template.name) (copia)", iconName: template.iconName)
         copy.categoriesStorage = template.categories.map {
             TemplateCategory(name: $0.name, colorHex: $0.colorHex, sortIndex: $0.sortIndex)
         }
@@ -95,26 +79,14 @@ private struct TemplateRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: template.iconName)
-                .font(.title3)
-                .foregroundStyle(.white)
-                .frame(width: 38, height: 38)
-                .background(Color(hex: template.colorHex), in: RoundedRectangle(cornerRadius: 9))
-
+            TemplateIconTile(iconName: template.iconName)
             VStack(alignment: .leading, spacing: 2) {
                 Text(template.name.isEmpty ? "Senza nome" : template.name)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.primary)
                 Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 4)
     }
 
     private var subtitle: String {
@@ -123,5 +95,18 @@ private struct TemplateRow: View {
         let categoryPart = categories == 1 ? "1 categoria" : "\(categories) categorie"
         let fieldPart = fields == 1 ? "1 campo" : "\(fields) campi"
         return "\(categoryPart) · \(fieldPart)"
+    }
+}
+
+/// L'icona del modello su un riquadro pieno, nello stile delle icone delle Impostazioni.
+struct TemplateIconTile: View {
+    let iconName: String
+
+    var body: some View {
+        Image(systemName: iconName)
+            .font(.title3)
+            .foregroundStyle(.white)
+            .frame(width: 38, height: 38)
+            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9))
     }
 }

@@ -32,10 +32,12 @@ struct PaletteColor: Identifiable, Hashable {
 
     var id: String { hex }
     var color: Color { Color(hex: hex) }
-    var dotImage: Image { color.dotImage }
 }
 
+/// Colori selezionabili per le categorie.
 enum Palette {
+    static let defaultHex = "#5254D9"
+
     /// Ordinati seguendo la ruota dei colori (tonalità crescente), non l'ordine di inserimento.
     static let swatches: [PaletteColor] = [
         PaletteColor(hex: "#C4622D", name: "Terracotta"),
@@ -48,12 +50,60 @@ enum Palette {
         PaletteColor(hex: "#8A6BC1", name: "Viola"),
         PaletteColor(hex: "#B43F6E", name: "Magenta")
     ]
+}
 
-    static let icons = [
+/// Icone selezionabili per i modelli.
+enum TemplateIcons {
+    static let all = [
         "pianokeys", "figure.strengthtraining.traditional", "figure.run", "guitars",
         "music.note", "book.closed", "brain.head.profile", "leaf",
         "square.stack.3d.up", "target", "paintbrush", "mic"
     ]
+}
 
-    static let ink = Color(hex: "#0A0A0A")
+/// Pulsante Elimina di sistema, mostrato con la sola icona: da iOS 26 etichetta e icona le
+/// fornisce iOS in base al ruolo; prima si ripiega sul cestino.
+struct DeleteButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Group {
+            if #available(iOS 26, *) {
+                Button(role: .destructive, action: action)
+            } else {
+                Button(role: .destructive, action: action) {
+                    Label("Elimina", systemImage: "trash")
+                }
+            }
+        }
+        .labelStyle(.iconOnly)
+    }
+}
+
+/// Pulsante di conferma di sistema (il check): da iOS 26 lo fornisce iOS in base al ruolo;
+/// prima si ripiega sul simbolo checkmark.
+struct ConfirmButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Group {
+            if #available(iOS 26, *) {
+                Button(role: .confirm, action: action)
+            } else {
+                Button(action: action) {
+                    Label("Salva", systemImage: "checkmark")
+                }
+            }
+        }
+        .labelStyle(.iconOnly)
+    }
+}
+
+extension View {
+    /// Eliminazione con lo swipe tramite il pulsante Elimina di sistema.
+    func swipeToDelete(perform action: @escaping () -> Void) -> some View {
+        swipeActions {
+            DeleteButton(action: action)
+        }
+    }
 }

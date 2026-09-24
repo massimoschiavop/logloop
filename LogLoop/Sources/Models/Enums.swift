@@ -11,7 +11,7 @@ enum FieldKind: String, CaseIterable, Identifiable {
         switch self {
         case .text: return "Testo"
         case .number: return "Numero"
-        case .selection: return "Selezione"
+        case .selection: return "Lista"
         }
     }
 
@@ -20,20 +20,6 @@ enum FieldKind: String, CaseIterable, Identifiable {
         case .text: return "textformat"
         case .number: return "number"
         case .selection: return "list.bullet"
-        }
-    }
-}
-
-enum SessionOutcome: String {
-    case completed
-    case skipped
-    case partial
-
-    var label: String {
-        switch self {
-        case .completed: return "Completato"
-        case .skipped: return "Saltato"
-        case .partial: return "Parziale"
         }
     }
 }
@@ -49,4 +35,8 @@ extension Array where Element: Sortable {
             element.sortIndex = offset
         }
     }
+}
+
+extension String {
+    var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
 }
