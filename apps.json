@@ -1,6 +1,7 @@
 {
   "name": "LogLoop",
   "identifier": "com.massimoschiavo.logloop.source",
+  "iconURL": "https://raw.githubusercontent.com/massimoschiavop/logloop/main/source/icon.png",
   "sourceURL": "https://raw.githubusercontent.com/massimoschiavop/logloop/main/apps.json",
   "website": "https://github.com/massimoschiavop/logloop",
   "apps": [
@@ -25,7 +26,10 @@
       "version": "1.0",
       "versionDate": "2026-09-24T00:18:26Z",
       "downloadURL": "https://github.com/massimoschiavop/logloop/releases/download/v1.0/LogLoop.ipa",
-      "size": 175974
+      "size": 175974,
+      "iconURL": "https://raw.githubusercontent.com/massimoschiavop/logloop/main/source/icon.png",
+      "appPermissions": {},
+      "screenshotURLs": []
     }
   ],
   "news": []
