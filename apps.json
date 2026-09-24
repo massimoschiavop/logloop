@@ -11,7 +11,21 @@
       "subtitle": "Schede e attività",
       "localizedDescription": "LogLoop: organizza le tue schede di attività a partire da modelli con categorie e campi.",
       "tintColor": "5254D9",
-      "versions": []
+      "versions": [
+        {
+          "version": "1.0",
+          "buildVersion": "1",
+          "date": "2026-09-24T00:18:26Z",
+          "localizedDescription": "LogLoop 1.0",
+          "downloadURL": "https://github.com/massimoschiavop/logloop/releases/download/v1.0/LogLoop.ipa",
+          "size": 175974,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0",
+      "versionDate": "2026-09-24T00:18:26Z",
+      "downloadURL": "https://github.com/massimoschiavop/logloop/releases/download/v1.0/LogLoop.ipa",
+      "size": 175974
     }
   ],
   "news": []
