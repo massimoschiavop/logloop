@@ -33,20 +33,28 @@ struct SheetEditorView: View {
                     Text("Nessun modello disponibile")
                         .foregroundStyle(.secondary)
                 } else {
-                    Picker("Modello", selection: $template) {
-                        ForEach(templates) { template in
-                            Label {
-                                Text(template.name)
-                            } icon: {
-                                Image(systemName: template.iconName)
+                    // Una riga sola: toccandola si apre il menu con i modelli, come per i colori
+                    // delle categorie. L'etichetta è personalizzata per distanziare l'icona dal nome.
+                    LabeledContent("Modello") {
+                        Menu {
+                            Picker("Modello", selection: $template) {
+                                ForEach(templates) { template in
+                                    Label(template.name, systemImage: template.iconName)
+                                        .tag(Optional(template))
+                                }
                             }
-                            .tag(Optional(template))
+                        } label: {
+                            if let template {
+                                HStack(spacing: 8) {
+                                    Image(systemName: template.iconName)
+                                    Text(template.name)
+                                    Image(systemName: "chevron.up.chevron.down")
+                                        .font(.caption)
+                                }
+                            }
                         }
                     }
-                    .pickerStyle(.navigationLink)
                 }
-            } header: {
-                Text("Modello")
             } footer: {
                 Text("Il modello definisce le categorie e i campi della scheda. I modelli si gestiscono in Impostazioni.")
             }
