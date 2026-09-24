@@ -1,13 +1,13 @@
 {
   "name": "LogLoop",
-  "identifier": "com.massimoschiavo.logloop.source",
+  "identifier": "com.cloudrift.logloop.source",
   "iconURL": "https://raw.githubusercontent.com/massimoschiavop/logloop/main/source/icon.png",
   "sourceURL": "https://raw.githubusercontent.com/massimoschiavop/logloop/main/apps.json",
   "website": "https://github.com/massimoschiavop/logloop",
   "apps": [
     {
       "name": "LogLoop",
-      "bundleIdentifier": "com.massimoschiavo.logloop",
+      "bundleIdentifier": "com.cloudrift.logloop",
       "developerName": "Massimo Schiavo",
       "subtitle": "Schede e attività",
       "localizedDescription": "LogLoop: organizza le tue schede di attività a partire da modelli con categorie e campi.",
@@ -43,6 +43,6 @@
   "description": "Sorgente ufficiale di LogLoop.",
   "tintColor": "5254D9",
   "featuredApps": [
-    "com.massimoschiavo.logloop"
+    "com.cloudrift.logloop"
   ]
 }

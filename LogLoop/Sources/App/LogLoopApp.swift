@@ -3,20 +3,11 @@ import SwiftUI
 
 @main
 struct LogLoopApp: App {
-    @AppStorage("appTheme") private var theme: AppTheme = .system
-    let container: ModelContainer
+    @AppStorage(AppTheme.storageKey) private var theme: AppTheme = .system
+    private let container: ModelContainer
 
     init() {
-        let schema = Schema([
-            Template.self,
-            TemplateCategory.self,
-            FieldDefinition.self
-        ])
-        do {
-            container = try ModelContainer(for: schema)
-        } catch {
-            fatalError("Impossibile creare il ModelContainer: \(error)")
-        }
+        container = Persistence.makeContainer()
         SampleData.seedIfNeeded(in: container.mainContext)
     }
 

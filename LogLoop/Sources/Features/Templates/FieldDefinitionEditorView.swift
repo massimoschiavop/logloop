@@ -67,13 +67,13 @@ struct FieldDefinitionEditorView: View {
                             .onSubmit { focusedOptionID = nil }
                             .swipeToDelete { deleteOption(option.id) }
                     }
-                    .onMove(perform: moveOptions)
+                    .onMove { options.move(fromOffsets: $0, toOffset: $1) }
 
                     Button("Aggiungi valore", systemImage: "plus.circle.fill", action: addOption)
                 } header: {
                     Text("Valori")
                 } footer: {
-                    if options.contains(where: { !$0.text.trimmed.isEmpty }) {
+                    if !cleanedOptions.isEmpty {
                         Text("Nell'attività potrai scegliere uno di questi valori.")
                     } else {
                         Text("Serve almeno un valore per usare il tipo Lista.")
@@ -84,47 +84,44 @@ struct FieldDefinitionEditorView: View {
         }
         .navigationTitle("Campo")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                ConfirmButton(action: save)
-                    .disabled(!isValid)
-            }
-        }
+        .confirmToolbarItem(isEnabled: isValid, action: save)
         .onChange(of: focusedOptionID) { _, focused in
-            if let id = newOptionID, focused != id {
-                finishNewOptionEditing(id)
+            if newOptionID != nil, focused != newOptionID {
+                finishNewOptionEditing()
             }
         }
+    }
+
+    /// I valori della lista senza spazi superflui e senza righe vuote.
+    private var cleanedOptions: [String] {
+        options.map(\.text.trimmed).filter { !$0.isEmpty }
     }
 
     private var isValid: Bool {
         guard !name.trimmed.isEmpty else { return false }
-        if kind == .selection {
-            return options.contains { !$0.text.trimmed.isEmpty }
-        }
-        return true
+        return kind != .selection || !cleanedOptions.isEmpty
     }
 
+    /// Scrive la bozza nel campo, tenendo solo i dati che servono al tipo scelto.
     private func save() {
-        if let id = newOptionID { finishNewOptionEditing(id) }
         field.name = name.trimmed
         field.kind = kind
-        field.unit = unit
-        field.options = kind == .selection
-            ? options.map { $0.text.trimmed }.filter { !$0.isEmpty }
-            : []
+        field.unit = kind == .number ? unit.trimmed : ""
+        field.options = kind == .selection ? cleanedOptions : []
         dismiss()
     }
 
     private func addOption() {
-        if let id = newOptionID { finishNewOptionEditing(id) }
+        finishNewOptionEditing()
         let item = OptionItem(text: "")
         options.append(item)
         newOptionID = item.id
         focusedOptionID = item.id
     }
 
-    private func finishNewOptionEditing(_ id: OptionItem.ID) {
+    /// Scarta il valore appena creato se è rimasto vuoto.
+    private func finishNewOptionEditing() {
+        guard let id = newOptionID else { return }
         if let item = options.first(where: { $0.id == id }), item.text.trimmed.isEmpty {
             options.removeAll { $0.id == id }
         }
@@ -134,9 +131,5 @@ struct FieldDefinitionEditorView: View {
     private func deleteOption(_ id: OptionItem.ID) {
         options.removeAll { $0.id == id }
         if newOptionID == id { newOptionID = nil }
-    }
-
-    private func moveOptions(from source: IndexSet, to destination: Int) {
-        options.move(fromOffsets: source, toOffset: destination)
     }
 }

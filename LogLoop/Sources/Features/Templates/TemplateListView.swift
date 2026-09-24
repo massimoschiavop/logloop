@@ -27,7 +27,7 @@ struct TemplateListView: View {
                                 context.delete(template)
                             }
                             Button {
-                                duplicate(template)
+                                context.insert(template.duplicate())
                             } label: {
                                 Label("Duplica", systemImage: "plus.square.on.square")
                             }
@@ -48,23 +48,6 @@ struct TemplateListView: View {
         .navigationDestination(isPresented: $isCreating) {
             TemplateEditingScreen(templateID: nil)
         }
-    }
-
-    private func duplicate(_ template: Template) {
-        let copy = Template(name: "\(template.name) (copia)", iconName: template.iconName)
-        copy.categoriesStorage = template.categories.map {
-            TemplateCategory(name: $0.name, colorHex: $0.colorHex, sortIndex: $0.sortIndex)
-        }
-        copy.fieldsStorage = template.fields.map {
-            FieldDefinition(
-                name: $0.name,
-                kind: $0.kind,
-                options: $0.options,
-                unit: $0.unit,
-                sortIndex: $0.sortIndex
-            )
-        }
-        context.insert(copy)
     }
 }
 
@@ -89,18 +72,5 @@ private struct TemplateRow: View {
         let categoryPart = categories == 1 ? "1 categoria" : "\(categories) categorie"
         let fieldPart = fields == 1 ? "1 campo" : "\(fields) campi"
         return "\(categoryPart) · \(fieldPart)"
-    }
-}
-
-/// L'icona del modello su un riquadro pieno, nello stile delle icone delle Impostazioni.
-struct TemplateIconTile: View {
-    let iconName: String
-
-    var body: some View {
-        Image(systemName: iconName)
-            .font(.title3)
-            .foregroundStyle(.white)
-            .frame(width: 38, height: 38)
-            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 9))
     }
 }

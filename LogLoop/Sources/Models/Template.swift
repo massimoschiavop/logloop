@@ -1,29 +1,103 @@
-import Foundation
 import SwiftData
+import SwiftUI
 
+/// Modello che definisce categorie e campi usati dalle schede.
 @Model
 final class Template {
+    static let defaultIcon = "square.stack.3d.up"
+
+    /// Icone selezionabili per i modelli.
+    static let availableIcons = [
+        "pianokeys", "figure.strengthtraining.traditional", "figure.run", "guitars",
+        "music.note", "book.closed", "brain.head.profile", "leaf",
+        defaultIcon, "target", "paintbrush", "mic"
+    ]
+
     var name: String = ""
-    var iconName: String = "square.stack.3d.up"
+    var iconName: String = Template.defaultIcon
     var createdAt: Date = Date()
 
+    /// Relazioni non ordinate come le salva SwiftData: per l'ordine dell'utente usare
+    /// `categories` e `fields`.
     @Relationship(deleteRule: .cascade, inverse: \TemplateCategory.template)
     var categoriesStorage: [TemplateCategory] = []
 
     @Relationship(deleteRule: .cascade, inverse: \FieldDefinition.template)
     var fieldsStorage: [FieldDefinition] = []
 
-    init(name: String, iconName: String = "square.stack.3d.up") {
+    init(name: String, iconName: String = Template.defaultIcon) {
         self.name = name
         self.iconName = iconName
         self.createdAt = Date()
     }
 
-    var categories: [TemplateCategory] {
-        categoriesStorage.sorted { $0.sortIndex < $1.sortIndex }
+    var categories: [TemplateCategory] { categoriesStorage.sortedByIndex() }
+    var fields: [FieldDefinition] { fieldsStorage.sortedByIndex() }
+
+    /// Una copia completa di categorie e campi, non ancora inserita in alcun contesto.
+    func duplicate() -> Template {
+        let copy = Template(name: "\(name) (copia)", iconName: iconName)
+        copy.categoriesStorage = categories.map { $0.copy() }
+        copy.fieldsStorage = fields.map { $0.copy() }
+        return copy
+    }
+}
+
+// MARK: - Modifica di categorie e campi
+
+/// Operazioni usate dall'editor: agiscono sul contesto del modello e mantengono i
+/// `sortIndex` contigui.
+extension Template {
+    /// Aggiunge in fondo una categoria senza nome, con il colore successivo della palette.
+    @discardableResult
+    func addCategory() -> TemplateCategory {
+        let count = categoriesStorage.count
+        let category = TemplateCategory(
+            name: "",
+            colorHex: Palette.swatches[count % Palette.swatches.count].hex,
+            sortIndex: count
+        )
+        category.template = self
+        modelContext?.insert(category)
+        return category
     }
 
-    var fields: [FieldDefinition] {
-        fieldsStorage.sorted { $0.sortIndex < $1.sortIndex }
+    /// Aggiunge in fondo un campo di testo senza nome.
+    @discardableResult
+    func addField() -> FieldDefinition {
+        let field = FieldDefinition(name: "", sortIndex: fieldsStorage.count)
+        field.template = self
+        modelContext?.insert(field)
+        return field
+    }
+
+    func removeCategory(_ category: TemplateCategory) {
+        let remaining = categories.filter { $0.identifier != category.identifier }
+        modelContext?.delete(category)
+        remaining.renumber()
+    }
+
+    func removeField(_ field: FieldDefinition) {
+        let remaining = fields.filter { $0.identifier != field.identifier }
+        modelContext?.delete(field)
+        remaining.renumber()
+    }
+
+    func moveCategories(from source: IndexSet, to destination: Int) {
+        var list = categories
+        list.move(fromOffsets: source, toOffset: destination)
+        list.renumber()
+    }
+
+    func moveFields(from source: IndexSet, to destination: Int) {
+        var list = fields
+        list.move(fromOffsets: source, toOffset: destination)
+        list.renumber()
+    }
+
+    /// Elimina categorie e campi rimasti senza nome.
+    func removeUnnamedEntries() {
+        categories.filter { $0.name.trimmed.isEmpty }.forEach(removeCategory)
+        fields.filter { $0.name.trimmed.isEmpty }.forEach(removeField)
     }
 }

@@ -6,18 +6,31 @@ Uso: scripts/update_source.py <versione> <build> <downloadURL> <percorso ipa>
 
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-SOURCE = Path(__file__).resolve().parent.parent / "apps.json"
-BUNDLE_ID = "com.massimoschiavo.logloop"
+ROOT = Path(__file__).resolve().parent.parent
+SOURCE = ROOT / "apps.json"
+
+
+def bundle_id() -> str:
+    """Il bundle ID, letto da project.yml: l'unico posto in cui è definito."""
+    match = re.search(r"PRODUCT_BUNDLE_IDENTIFIER:\s*([^\s#]+)", (ROOT / "project.yml").read_text())
+    return match.group(1)
 
 
 def main() -> None:
     version, build, download_url, ipa_path = sys.argv[1:5]
     source = json.loads(SOURCE.read_text())
-    app = next(a for a in source["apps"] if a["bundleIdentifier"] == BUNDLE_ID)
+    app = source["apps"][0]
+
+    # Riallinea gli identificativi della sorgente al bundle ID di project.yml.
+    app_id = bundle_id()
+    source["identifier"] = f"{app_id}.source"
+    source["featuredApps"] = [app_id]
+    app["bundleIdentifier"] = app_id
 
     entry = {
         "version": version,

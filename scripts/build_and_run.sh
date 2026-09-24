@@ -14,7 +14,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-BUNDLE_ID="com.massimoschiavo.logloop"
+# Letto da project.yml, l'unico posto in cui è definito.
+BUNDLE_ID=$(sed -n 's/^ *PRODUCT_BUNDLE_IDENTIFIER: *\([^ #]*\).*/\1/p' project.yml)
 
 ON_PHONE=0
 while getopts "p" opt; do

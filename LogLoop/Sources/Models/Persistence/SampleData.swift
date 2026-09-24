@@ -15,9 +15,9 @@ enum SampleData {
     private static func pianoTemplate() -> Template {
         let template = Template(name: "Pianoforte", iconName: "pianokeys")
         template.categoriesStorage = [
-            TemplateCategory(name: "Duvernoy", colorHex: "#5254D9", sortIndex: 0),
-            TemplateCategory(name: "Beyer", colorHex: "#2E9E7A", sortIndex: 1),
-            TemplateCategory(name: "Hanon", colorHex: "#C4622D", sortIndex: 2)
+            TemplateCategory(name: "Duvernoy", colorHex: Palette.indigo.hex, sortIndex: 0),
+            TemplateCategory(name: "Beyer", colorHex: Palette.green.hex, sortIndex: 1),
+            TemplateCategory(name: "Hanon", colorHex: Palette.terracotta.hex, sortIndex: 2)
         ]
         template.fieldsStorage = [
             FieldDefinition(name: "Battute", kind: .text, sortIndex: 0),
@@ -35,9 +35,9 @@ enum SampleData {
     private static func gymTemplate() -> Template {
         let template = Template(name: "Palestra", iconName: "figure.strengthtraining.traditional")
         template.categoriesStorage = [
-            TemplateCategory(name: "Gambe", colorHex: "#2E9E7A", sortIndex: 0),
-            TemplateCategory(name: "Braccia", colorHex: "#5254D9", sortIndex: 1),
-            TemplateCategory(name: "Petto", colorHex: "#C4622D", sortIndex: 2)
+            TemplateCategory(name: "Gambe", colorHex: Palette.green.hex, sortIndex: 0),
+            TemplateCategory(name: "Braccia", colorHex: Palette.indigo.hex, sortIndex: 1),
+            TemplateCategory(name: "Petto", colorHex: Palette.terracotta.hex, sortIndex: 2)
         ]
         template.fieldsStorage = [
             FieldDefinition(name: "Serie", kind: .number, sortIndex: 0),
