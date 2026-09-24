@@ -6,9 +6,14 @@ struct TemplateListView: View {
     @Query(sort: \Template.createdAt, order: .reverse) private var templates: [Template]
     @State private var creating: Template?
 
+    /// Il modello in creazione è già nel contesto ma compare in lista solo dopo "Salva".
+    private var savedTemplates: [Template] {
+        templates.filter { $0 !== creating }
+    }
+
     var body: some View {
         Group {
-            if templates.isEmpty {
+            if savedTemplates.isEmpty {
                 ContentUnavailableView(
                     "Nessun modello",
                     systemImage: "square.stack.3d.up",
@@ -16,7 +21,7 @@ struct TemplateListView: View {
                 )
             } else {
                 List {
-                    ForEach(templates) { template in
+                    ForEach(savedTemplates) { template in
                         NavigationLink {
                             TemplateEditorView(template: template, isNew: false)
                         } label: {
@@ -45,8 +50,10 @@ struct TemplateListView: View {
                 Button("Nuovo modello", systemImage: "plus", action: createTemplate)
             }
         }
-        .navigationDestination(item: $creating) { template in
-            TemplateEditorView(template: template, isNew: true)
+        .sheet(item: $creating) { template in
+            NavigationStack {
+                TemplateEditorView(template: template, isNew: true)
+            }
         }
     }
 

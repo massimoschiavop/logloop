@@ -6,6 +6,9 @@ struct TemplateEditorView: View {
     let isNew: Bool
 
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    /// Un modello nuovo viene tenuto solo se si tocca "Salva"; altrimenti uscendo è scartato.
+    @State private var saved = false
     /// Il campo extra aperto nel dettaglio: finché è valorizzato, l'uscita dall'editor
     /// è solo apparente (onDisappear scatta anche aprendo il dettaglio).
     @State private var editingField: FieldDefinition?
@@ -19,8 +22,8 @@ struct TemplateEditorView: View {
     /// Nome del modello esistente all'apertura, ripristinato se si esce lasciandolo vuoto.
     @State private var originalName: String?
 
-    /// Le modifiche valgono subito (come nelle Impostazioni di iOS) e vengono sistemate
-    /// uscendo con "indietro".
+    /// Per un modello esistente le modifiche valgono subito (come nelle Impostazioni di iOS)
+    /// e vengono sistemate uscendo con "indietro"; uno nuovo si conferma con "Salva".
     var body: some View {
         Form {
             Section("Nome") {
@@ -79,6 +82,21 @@ struct TemplateEditorView: View {
         }
         .navigationTitle(isNew ? "Nuovo modello" : "Modifica modello")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if isNew {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Annulla") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Salva") {
+                        saved = true
+                        dismiss()
+                    }
+                    .disabled(template.name.trimmed.isEmpty)
+                }
+            }
+        }
+        .interactiveDismissDisabled(isNew)
         .onAppear {
             if originalName == nil { originalName = template.name }
             // Tornando dal dettaglio con il nome svuotato il campo viene scartato, come
@@ -167,11 +185,10 @@ struct TemplateEditorView: View {
         list.renumber()
     }
 
-    /// Uscendo non c'è un "Fine" da disabilitare: un modello nuovo lasciato senza nome viene
-    /// scartato; altrimenti le righe senza nome vengono eliminate e un nome svuotato torna
-    /// quello di partenza.
+    /// Un modello nuovo non salvato viene scartato; altrimenti le righe senza nome vengono
+    /// eliminate e un nome svuotato torna quello di partenza.
     private func finishEditing() {
-        if isNew, template.name.trimmed.isEmpty {
+        if isNew, !saved {
             context.delete(template)
             return
         }
