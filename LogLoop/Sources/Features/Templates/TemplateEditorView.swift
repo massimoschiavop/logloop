@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 /// Apre l'editor su un contesto separato senza salvataggio automatico: le modifiche arrivano
-/// al database solo con "Salva", mentre annullando o chiudendo l'app vanno perse.
+/// al database solo con il check, mentre tornando indietro o chiudendo l'app vanno perse.
 /// Con `templateID` nullo crea un modello nuovo.
 struct TemplateEditingScreen: View {
     let templateID: PersistentIdentifier?
@@ -38,7 +38,6 @@ private struct TemplateEditorView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @State private var confirmingDiscard = false
     /// Il campo extra aperto nel dettaglio, controllato al ritorno nell'editor.
     @State private var editingField: FieldDefinition?
     @FocusState private var focusedCategoryID: UUID?
@@ -107,25 +106,12 @@ private struct TemplateEditorView: View {
         }
         .navigationTitle(isNew ? "Nuovo modello" : "Modifica modello")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden()
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Annulla", action: cancel)
-                    .confirmationDialog(
-                        "Vuoi scartare le modifiche?",
-                        isPresented: $confirmingDiscard,
-                        titleVisibility: .visible
-                    ) {
-                        Button("Scarta modifiche", role: .destructive) { dismiss() }
-                    }
-            }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Salva", systemImage: "checkmark", action: save)
-                    .labelStyle(.iconOnly)
+                ConfirmButton(action: save)
                     .disabled(template.name.trimmed.isEmpty)
             }
         }
-        .interactiveDismissDisabled()
         .onAppear {
             // Tornando dal dettaglio con il nome svuotato il campo viene scartato, come
             // quando si lascia vuoto il nome di un campo appena aggiunto.
@@ -208,19 +194,6 @@ private struct TemplateEditorView: View {
         var list = template.fields
         list.move(fromOffsets: source, toOffset: destination)
         list.renumber()
-    }
-
-    /// Chiede conferma solo se c'è qualcosa da perdere: un modello nuovo è già un inserimento
-    /// nel contesto, quindi conta solo se è stato compilato.
-    private func cancel() {
-        let hasEdits = isNew
-            ? !template.name.isEmpty || !template.categoriesStorage.isEmpty || !template.fieldsStorage.isEmpty
-            : context.hasChanges
-        if hasEdits {
-            confirmingDiscard = true
-        } else {
-            dismiss()
-        }
     }
 
     /// Scarta le righe rimaste senza nome e scrive le modifiche nel database.

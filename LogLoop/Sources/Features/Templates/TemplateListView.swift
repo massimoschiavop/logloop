@@ -45,10 +45,8 @@ struct TemplateListView: View {
                 Button("Nuovo modello", systemImage: "plus") { isCreating = true }
             }
         }
-        .sheet(isPresented: $isCreating) {
-            NavigationStack {
-                TemplateEditingScreen(templateID: nil)
-            }
+        .navigationDestination(isPresented: $isCreating) {
+            TemplateEditingScreen(templateID: nil)
         }
     }
 
