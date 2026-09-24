@@ -3,17 +3,14 @@ import SwiftUI
 
 struct TemplateListView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \Template.createdAt, order: .reverse) private var templates: [Template]
+    /// Il modello in creazione è già nel contesto come bozza e compare in lista solo dopo "Salva".
+    @Query(filter: #Predicate<Template> { !$0.isDraft }, sort: \Template.createdAt, order: .reverse)
+    private var templates: [Template]
     @State private var creating: Template?
-
-    /// Il modello in creazione è già nel contesto ma compare in lista solo dopo "Salva".
-    private var savedTemplates: [Template] {
-        templates.filter { $0 !== creating }
-    }
 
     var body: some View {
         Group {
-            if savedTemplates.isEmpty {
+            if templates.isEmpty {
                 ContentUnavailableView(
                     "Nessun modello",
                     systemImage: "square.stack.3d.up",
@@ -21,7 +18,7 @@ struct TemplateListView: View {
                 )
             } else {
                 List {
-                    ForEach(savedTemplates) { template in
+                    ForEach(templates) { template in
                         NavigationLink {
                             TemplateEditorView(template: template, isNew: false)
                         } label: {
@@ -59,6 +56,7 @@ struct TemplateListView: View {
 
     private func createTemplate() {
         let template = Template(name: "")
+        template.isDraft = true
         context.insert(template)
         creating = template
     }

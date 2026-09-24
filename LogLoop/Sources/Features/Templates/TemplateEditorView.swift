@@ -88,10 +88,12 @@ struct TemplateEditorView: View {
                     Button("Annulla") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Salva") {
+                    Button("Salva", systemImage: "checkmark") {
                         saved = true
+                        template.isDraft = false
                         dismiss()
                     }
+                    .labelStyle(.iconOnly)
                     .disabled(template.name.trimmed.isEmpty)
                 }
             }
