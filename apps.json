@@ -20,7 +20,8 @@
           "localizedDescription": "LogLoop 1.0",
           "downloadURL": "https://github.com/massimoschiavop/logloop/releases/download/v1.0/LogLoop.ipa",
           "size": 175974,
-          "minOSVersion": "17.0"
+          "minOSVersion": "17.0",
+          "maxOSVersion": "99.0"
         }
       ],
       "version": "1.0",
@@ -28,9 +29,20 @@
       "downloadURL": "https://github.com/massimoschiavop/logloop/releases/download/v1.0/LogLoop.ipa",
       "size": 175974,
       "iconURL": "https://raw.githubusercontent.com/massimoschiavop/logloop/main/source/icon.png",
-      "appPermissions": {},
-      "screenshotURLs": []
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      },
+      "screenshotURLs": [],
+      "versionDescription": "LogLoop 1.0",
+      "category": "productivity"
     }
   ],
-  "news": []
+  "news": [],
+  "subtitle": "Schede e attività",
+  "description": "Sorgente ufficiale di LogLoop.",
+  "tintColor": "5254D9",
+  "featuredApps": [
+    "com.massimoschiavo.logloop"
+  ]
 }

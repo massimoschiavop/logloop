@@ -27,12 +27,14 @@ def main() -> None:
         "downloadURL": download_url,
         "size": os.path.getsize(ipa_path),
         "minOSVersion": "17.0",
+        "maxOSVersion": "99.0",
     }
     app["versions"] = [entry] + [v for v in app.get("versions", []) if v["version"] != version]
 
     # Campi del formato AltStore v1, letti ancora da molti signer (ESign, KravaSign...).
     app["version"] = version
     app["versionDate"] = entry["date"]
+    app["versionDescription"] = entry["localizedDescription"]
     app["downloadURL"] = download_url
     app["size"] = entry["size"]
 
