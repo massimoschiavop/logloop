@@ -3,10 +3,8 @@ import SwiftUI
 
 struct TemplateListView: View {
     @Environment(\.modelContext) private var context
-    /// Il modello in creazione è già nel contesto come bozza e compare in lista solo dopo "Salva".
-    @Query(filter: #Predicate<Template> { !$0.isDraft }, sort: \Template.createdAt, order: .reverse)
-    private var templates: [Template]
-    @State private var creating: Template?
+    @Query(sort: \Template.createdAt, order: .reverse) private var templates: [Template]
+    @State private var isCreating = false
 
     var body: some View {
         Group {
@@ -20,7 +18,7 @@ struct TemplateListView: View {
                 List {
                     ForEach(templates) { template in
                         NavigationLink {
-                            TemplateEditorView(template: template, isNew: false)
+                            TemplateEditingScreen(templateID: template.persistentModelID)
                         } label: {
                             TemplateRow(template: template)
                         }
@@ -44,21 +42,14 @@ struct TemplateListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Nuovo modello", systemImage: "plus", action: createTemplate)
+                Button("Nuovo modello", systemImage: "plus") { isCreating = true }
             }
         }
-        .sheet(item: $creating) { template in
+        .sheet(isPresented: $isCreating) {
             NavigationStack {
-                TemplateEditorView(template: template, isNew: true)
+                TemplateEditingScreen(templateID: nil)
             }
         }
-    }
-
-    private func createTemplate() {
-        let template = Template(name: "")
-        template.isDraft = true
-        context.insert(template)
-        creating = template
     }
 
     private func duplicate(_ template: Template) {

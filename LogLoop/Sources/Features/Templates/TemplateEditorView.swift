@@ -1,16 +1,45 @@
 import SwiftData
 import SwiftUI
 
-struct TemplateEditorView: View {
+/// Apre l'editor su un contesto separato senza salvataggio automatico: le modifiche arrivano
+/// al database solo con "Salva", mentre annullando o chiudendo l'app vanno perse.
+/// Con `templateID` nullo crea un modello nuovo.
+struct TemplateEditingScreen: View {
+    let templateID: PersistentIdentifier?
+
+    @Environment(\.modelContext) private var mainContext
+    @State private var draft: (context: ModelContext, template: Template)?
+
+    var body: some View {
+        if let draft {
+            TemplateEditorView(template: draft.template, isNew: templateID == nil)
+                .modelContext(draft.context)
+        } else {
+            Color.clear.onAppear(perform: makeDraft)
+        }
+    }
+
+    private func makeDraft() {
+        let context = ModelContext(mainContext.container)
+        context.autosaveEnabled = false
+        if let templateID, let template = context.model(for: templateID) as? Template {
+            draft = (context, template)
+        } else {
+            let template = Template(name: "")
+            context.insert(template)
+            draft = (context, template)
+        }
+    }
+}
+
+private struct TemplateEditorView: View {
     @Bindable var template: Template
     let isNew: Bool
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    /// Un modello nuovo viene tenuto solo se si tocca "Salva"; altrimenti uscendo è scartato.
-    @State private var saved = false
-    /// Il campo extra aperto nel dettaglio: finché è valorizzato, l'uscita dall'editor
-    /// è solo apparente (onDisappear scatta anche aprendo il dettaglio).
+    @State private var confirmingDiscard = false
+    /// Il campo extra aperto nel dettaglio, controllato al ritorno nell'editor.
     @State private var editingField: FieldDefinition?
     @FocusState private var focusedCategoryID: UUID?
     /// La categoria appena creata con "+": se perde il focus senza un nome viene scartata.
@@ -19,11 +48,7 @@ struct TemplateEditorView: View {
     /// tipo e opzioni si impostano poi nel dettaglio, toccando la riga.
     @State private var inlineFieldID: UUID?
     @FocusState private var focusedFieldID: UUID?
-    /// Nome del modello esistente all'apertura, ripristinato se si esce lasciandolo vuoto.
-    @State private var originalName: String?
 
-    /// Per un modello esistente le modifiche valgono subito (come nelle Impostazioni di iOS)
-    /// e vengono sistemate uscendo con "indietro"; uno nuovo si conferma con "Salva".
     var body: some View {
         Form {
             Section("Nome") {
@@ -82,34 +107,32 @@ struct TemplateEditorView: View {
         }
         .navigationTitle(isNew ? "Nuovo modello" : "Modifica modello")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden()
         .toolbar {
-            if isNew {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annulla") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Salva", systemImage: "checkmark") {
-                        saved = true
-                        template.isDraft = false
-                        dismiss()
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Annulla", action: cancel)
+                    .confirmationDialog(
+                        "Vuoi scartare le modifiche?",
+                        isPresented: $confirmingDiscard,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Scarta modifiche", role: .destructive) { dismiss() }
                     }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Salva", systemImage: "checkmark", action: save)
                     .labelStyle(.iconOnly)
                     .disabled(template.name.trimmed.isEmpty)
-                }
             }
         }
-        .interactiveDismissDisabled(isNew)
+        .interactiveDismissDisabled()
         .onAppear {
-            if originalName == nil { originalName = template.name }
             // Tornando dal dettaglio con il nome svuotato il campo viene scartato, come
             // quando si lascia vuoto il nome di un campo appena aggiunto.
             if let field = editingField {
                 editingField = nil
                 if field.name.trimmed.isEmpty { deleteField(field) }
             }
-        }
-        .onDisappear {
-            if editingField == nil { finishEditing() }
         }
         .onChange(of: focusedCategoryID) { _, focused in
             if let id = newCategoryID, focused != id {
@@ -187,22 +210,29 @@ struct TemplateEditorView: View {
         list.renumber()
     }
 
-    /// Un modello nuovo non salvato viene scartato; altrimenti le righe senza nome vengono
-    /// eliminate e un nome svuotato torna quello di partenza.
-    private func finishEditing() {
-        if isNew, !saved {
-            context.delete(template)
-            return
+    /// Chiede conferma solo se c'è qualcosa da perdere: un modello nuovo è già un inserimento
+    /// nel contesto, quindi conta solo se è stato compilato.
+    private func cancel() {
+        let hasEdits = isNew
+            ? !template.name.isEmpty || !template.categoriesStorage.isEmpty || !template.fieldsStorage.isEmpty
+            : context.hasChanges
+        if hasEdits {
+            confirmingDiscard = true
+        } else {
+            dismiss()
         }
-        if template.name.trimmed.isEmpty, let originalName {
-            template.name = originalName
-        }
+    }
+
+    /// Scarta le righe rimaste senza nome e scrive le modifiche nel database.
+    private func save() {
         for category in template.categories where category.name.trimmed.isEmpty {
             deleteCategory(category)
         }
         for field in template.fields where field.name.trimmed.isEmpty {
             deleteField(field)
         }
+        try? context.save()
+        dismiss()
     }
 }
 

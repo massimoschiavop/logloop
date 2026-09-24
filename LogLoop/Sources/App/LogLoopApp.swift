@@ -17,7 +17,6 @@ struct LogLoopApp: App {
         } catch {
             fatalError("Impossibile creare il ModelContainer: \(error)")
         }
-        Template.deleteDrafts(in: container.mainContext)
         SampleData.seedIfNeeded(in: container.mainContext)
     }
 
