@@ -13,7 +13,7 @@ enum SampleData {
     }
 
     private static func pianoTemplate() -> Template {
-        let template = Template(name: "Pianoforte", iconName: "pianokeys")
+        let template = Template(name: "Pianoforte", iconName: "pianokeys", sortIndex: 0)
         template.categoriesStorage = [
             TemplateCategory(name: "Duvernoy", colorHex: Palette.indigo.hex, sortIndex: 0),
             TemplateCategory(name: "Beyer", colorHex: Palette.green.hex, sortIndex: 1),
@@ -33,7 +33,11 @@ enum SampleData {
     }
 
     private static func gymTemplate() -> Template {
-        let template = Template(name: "Palestra", iconName: "figure.strengthtraining.traditional")
+        let template = Template(
+            name: "Palestra",
+            iconName: "figure.strengthtraining.traditional",
+            sortIndex: 1
+        )
         template.categoriesStorage = [
             TemplateCategory(name: "Gambe", colorHex: Palette.green.hex, sortIndex: 0),
             TemplateCategory(name: "Braccia", colorHex: Palette.indigo.hex, sortIndex: 1),

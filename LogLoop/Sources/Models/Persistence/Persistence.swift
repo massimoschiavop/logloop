@@ -4,7 +4,8 @@ enum Persistence {
     static let schema = Schema([
         Template.self,
         TemplateCategory.self,
-        FieldDefinition.self
+        FieldDefinition.self,
+        Sheet.self
     ])
 
     /// Il container dell'app; `inMemory` serve per le anteprime.

@@ -3,8 +3,10 @@ import SwiftUI
 
 struct TemplateListView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \Template.createdAt, order: .reverse) private var templates: [Template]
+    @Query(sort: Template.userOrder) private var templates: [Template]
     @State private var isCreating = false
+    /// Il modello che non si può eliminare perché usato da delle schede.
+    @State private var templateInUse: Template?
 
     var body: some View {
         Group {
@@ -24,10 +26,10 @@ struct TemplateListView: View {
                         }
                         .swipeActions {
                             DeleteButton {
-                                context.delete(template)
+                                delete(template)
                             }
                             Button {
-                                context.insert(template.duplicate())
+                                context.insert(template.duplicate(sortIndex: templates.count))
                             } label: {
                                 Label("Duplica", systemImage: "plus.square.on.square")
                             }
@@ -35,6 +37,7 @@ struct TemplateListView: View {
                             .tint(.blue)
                         }
                     }
+                    .onMove(perform: move)
                 }
             }
         }
@@ -48,6 +51,38 @@ struct TemplateListView: View {
         .navigationDestination(isPresented: $isCreating) {
             TemplateEditingScreen(templateID: nil)
         }
+        .alert(
+            "Impossibile eliminare il modello",
+            isPresented: Binding(
+                get: { templateInUse != nil },
+                set: { if !$0 { templateInUse = nil } }
+            ),
+            presenting: templateInUse
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { template in
+            let count = template.sheets.count
+            Text(count == 1
+                 ? "È usato da 1 scheda. Elimina prima la scheda."
+                 : "È usato da \(count) schede. Elimina prima le schede.")
+        }
+    }
+
+    /// I modelli usati da delle schede non si eliminano: lo si spiega con un alert.
+    private func delete(_ template: Template) {
+        guard template.sheets.isEmpty else {
+            templateInUse = template
+            return
+        }
+        let remaining = templates.filter { $0.persistentModelID != template.persistentModelID }
+        context.delete(template)
+        remaining.renumber()
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        var list = templates
+        list.move(fromOffsets: source, toOffset: destination)
+        list.renumber()
     }
 }
 

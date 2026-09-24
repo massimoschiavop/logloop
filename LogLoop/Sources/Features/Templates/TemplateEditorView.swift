@@ -25,7 +25,9 @@ struct TemplateEditingScreen: View {
         if let templateID, let template = context.model(for: templateID) as? Template {
             draft = (context, template)
         } else {
-            let template = Template(name: "")
+            // I nuovi modelli vanno in fondo alla lista.
+            let count = (try? context.fetchCount(FetchDescriptor<Template>())) ?? 0
+            let template = Template(name: "", sortIndex: count)
             context.insert(template)
             draft = (context, template)
         }

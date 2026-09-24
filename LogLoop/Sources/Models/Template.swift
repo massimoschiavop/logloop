@@ -3,7 +3,11 @@ import SwiftUI
 
 /// Modello che definisce categorie e campi usati dalle schede.
 @Model
-final class Template {
+final class Template: Sortable {
+    /// L'ordine scelto dall'utente; a parità di indice (modelli creati prima del riordino)
+    /// vengono prima i più recenti.
+    static let userOrder = [SortDescriptor(\Template.sortIndex), SortDescriptor(\Template.createdAt, order: .reverse)]
+
     static let defaultIcon = "square.stack.3d.up"
 
     /// Icone selezionabili per i modelli.
@@ -16,6 +20,7 @@ final class Template {
     var name: String = ""
     var iconName: String = Template.defaultIcon
     var createdAt: Date = Date()
+    var sortIndex: Int = 0
 
     /// Relazioni non ordinate come le salva SwiftData: per l'ordine dell'utente usare
     /// `categories` e `fields`.
@@ -25,9 +30,14 @@ final class Template {
     @Relationship(deleteRule: .cascade, inverse: \FieldDefinition.template)
     var fieldsStorage: [FieldDefinition] = []
 
-    init(name: String, iconName: String = Template.defaultIcon) {
+    /// Le schede create da questo modello.
+    @Relationship(deleteRule: .nullify, inverse: \Sheet.template)
+    var sheets: [Sheet] = []
+
+    init(name: String, iconName: String = Template.defaultIcon, sortIndex: Int = 0) {
         self.name = name
         self.iconName = iconName
+        self.sortIndex = sortIndex
         self.createdAt = Date()
     }
 
@@ -35,8 +45,8 @@ final class Template {
     var fields: [FieldDefinition] { fieldsStorage.sortedByIndex() }
 
     /// Una copia completa di categorie e campi, non ancora inserita in alcun contesto.
-    func duplicate() -> Template {
-        let copy = Template(name: "\(name) (copia)", iconName: iconName)
+    func duplicate(sortIndex: Int) -> Template {
+        let copy = Template(name: "\(name) (copia)", iconName: iconName, sortIndex: sortIndex)
         copy.categoriesStorage = categories.map { $0.copy() }
         copy.fieldsStorage = fields.map { $0.copy() }
         return copy
