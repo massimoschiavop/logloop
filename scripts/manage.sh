@@ -1,6 +1,6 @@
 #!/bin/zsh
 #
-# Menu unico per avviare e rilasciare LogLoop: scegli un numero e premi Invio.
+# Menu unico per avviare e rilasciare LogLoop: basta premere il numero, senza Invio.
 # Dopo ogni azione si torna al menu; si esce con 0 (o Ctrl+D).
 # Ctrl+C interrompe l'azione in corso e riporta al menu.
 #
@@ -265,7 +265,7 @@ run_action() {
     print -P "   %K{red}%F{black}%B INTERROTTO %b%f%k"
   fi
   print
-  read -s "?   Premi Invio per tornare al menu…" || true
+  read -s -k 1 "?   Premi un tasto per tornare al menu…" || true
 }
 
 # Ctrl+C al prompt del menu non chiude lo script.
@@ -273,14 +273,15 @@ trap 'print' INT
 
 while true; do
   show_menu
-  read "choice?   Scelta : " || break
+  # Un solo tasto, senza Invio; Ctrl+C interrompe la lettura e ridisegna il menu.
+  read -k 1 "choice?   Scelta : " || continue
   case "$choice" in
     1) run_action "📱  Simulatore" run_on_simulator ;;
     2) run_action "📲  Telefono" run_on_phone ;;
     3) run_action "🚀  Rilascio" release ;;
-    0|q) break ;;
+    0|q|$'\x04') break ;;
   esac
 done
 
+# Uscendo si lascia il terminale pulito.
 clear
-print -P "\n   %F{magenta}∞%f  Alla prossima!\n"
