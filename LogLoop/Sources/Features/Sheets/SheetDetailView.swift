@@ -15,6 +15,8 @@ struct SheetDetailView: View {
     @State private var adding: AddTarget?
     @State private var newName = ""
     @FocusState private var isNewNameFocused: Bool
+    /// L'esercizio aperto nell'editor, in un foglio dal basso.
+    @State private var editingExercise: Exercise?
 
     /// I giorni della scheda nell'ordine della settimana.
     private var days: [Weekday] {
@@ -66,6 +68,11 @@ struct SheetDetailView: View {
         .scrollPosition(id: position)
         .background(ContentPopGestureDisabler())
         .modifier(HeaderBar(isVisible: sheet.showsWeeks || sheet.showsDays) { header })
+        .sheet(item: $editingExercise) { exercise in
+            NavigationStack {
+                ExerciseEditorView(sheet: sheet, exercise: exercise)
+            }
+        }
         .navigationTitle(sheet.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -109,54 +116,62 @@ struct SheetDetailView: View {
                 [.title(target, groups.count > 1 ? "Senza categoria" : "Esercizi", nil)]
             }
             rows += group.exercises.map { .exercise($0, category) }
-            if adding == target {
-                rows.append(.newName(target))
-            } else if group.exercises.isEmpty {
-                rows.append(.empty(target))
-            }
+            if adding == target { rows.append(.newName(target)) }
             return rows
         }
     }
 
     private func pageContent(for day: Weekday?) -> some View {
         let rows = rows(for: day)
-        return List {
-            // Nessuna riga ha moveDisabled: la lista rifiuta di lasciare un esercizio accanto a
-            // una riga bloccata, per esempio subito sotto un titolo. Si spostano però solo gli
-            // esercizi: il resto, se trascinato, torna al suo posto.
-            ForEach(rows) { row in
-                switch row {
-                case .title(let target, let title, let color):
-                    CategoryTitleRow(title: title, color: color) {
-                        commitNewExercise()
-                        newName = ""
-                        adding = target
-                        isNewNameFocused = true
-                    }
-                case .exercise(let exercise, _):
-                    NavigationLink(value: SheetRoute.editExercise(exercise)) {
-                        ExerciseRow(exercise: exercise, fields: sheet.template?.fields ?? [])
-                    }
-                    .swipeToDelete { delete(exercise) }
-                case .empty:
-                    Text("Nessun esercizio")
-                        .foregroundStyle(.secondary)
-                case .newName:
-                    TextField("Nome dell'esercizio", text: $newName)
-                        .focused($isNewNameFocused)
-                        .submitLabel(.done)
-                        .onSubmit(commitNewExercise)
-                        .onAppear { isNewNameFocused = true }
-                        .onChange(of: isNewNameFocused) {
-                            if !isNewNameFocused { commitNewExercise() }
+        return ScrollViewReader { proxy in
+            List {
+                // Nessuna riga ha moveDisabled: la lista rifiuta di lasciare un esercizio accanto a
+                // una riga bloccata, per esempio subito sotto un titolo. Si spostano però solo gli
+                // esercizi: il resto, se trascinato, torna al suo posto.
+                ForEach(rows) { row in
+                    switch row {
+                    case .title(let target, let title, let color):
+                        CategoryTitleRow(title: title, color: color) {
+                            commitNewExercise()
+                            newName = ""
+                            adding = target
+                            isNewNameFocused = true
                         }
+                    case .exercise(let exercise, _):
+                        Button {
+                            commitNewExercise()
+                            editingExercise = exercise
+                        } label: {
+                            ExerciseRow(exercise: exercise, fields: sheet.template?.fields ?? [])
+                                .contentShape(Rectangle())
+                        }
+                        .foregroundStyle(.primary)
+                        .swipeToDelete { delete(exercise) }
+                    case .newName:
+                        TextField("Nome dell'esercizio", text: $newName)
+                            .focused($isNewNameFocused)
+                            .submitLabel(.done)
+                            .onSubmit(commitNewExercise)
+                            .onAppear { isNewNameFocused = true }
+                            .onChange(of: isNewNameFocused) {
+                                if !isNewNameFocused { commitNewExercise() }
+                            }
+                    }
+                }
+                .onMove { source, destination in
+                    move(in: rows, from: source, to: destination)
                 }
             }
-            .onMove { source, destination in
-                move(in: rows, from: source, to: destination)
+            .background(RowSwipePriority())
+            // La riga del nome nuovo sale a metà schermo, ben sopra la tastiera, quando questa
+            // ha finito di aprirsi.
+            .onChange(of: adding) {
+                guard let adding, adding.day == day else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    withAnimation { proxy.scrollTo(PageRow.newName(adding).id, anchor: .center) }
+                }
             }
         }
-        .background(RowSwipePriority())
     }
 
     /// Un esercizio trascinato prende la categoria della riga sopra il punto in cui è lasciato:
@@ -179,7 +194,7 @@ struct SheetDetailView: View {
             next = index.flatMap { siblings.indices.contains($0 + 1) ? siblings[$0 + 1] : nil }
         case .title, nil:
             next = siblings.first
-        case .newName, .empty:
+        case .newName:
             next = nil
         }
         // Dopo il rilascio: cambiare la categoria mentre la lista chiude il suo spostamento
@@ -327,14 +342,11 @@ private enum PageRow: Identifiable {
     case title(AddTarget, String, Color?)
     case exercise(Exercise, UUID?)
     case newName(AddTarget)
-    /// Il segnaposto di una categoria vuota, che mostra dove lasciare un esercizio trascinato.
-    case empty(AddTarget)
 
     var id: String {
         switch self {
         case .title(let target, _, _): "title-\(target.category?.uuidString ?? "none")"
         case .exercise(let exercise, _): exercise.identifier.uuidString
-        case .empty(let target): "empty-\(target.category?.uuidString ?? "none")"
         case .newName(let target): "new-\(target.category?.uuidString ?? "none")"
         }
     }
@@ -342,7 +354,7 @@ private enum PageRow: Identifiable {
     var category: UUID? {
         switch self {
         case .exercise(_, let category): category
-        case .title(let target, _, _), .newName(let target), .empty(let target): target.category
+        case .title(let target, _, _), .newName(let target): target.category
         }
     }
 }

@@ -73,10 +73,6 @@ struct SheetListView: View {
                     SheetEditorView(sheet: sheet)
                 case .detail(let sheet):
                     SheetDetailView(sheet: sheet)
-                case .editExercise(let exercise):
-                    if let sheet = exercise.sheet {
-                        ExerciseEditorView(sheet: sheet, exercise: exercise)
-                    }
                 }
             }
         }
@@ -119,7 +115,6 @@ enum SheetRoute: Hashable {
     case new
     case edit(Sheet)
     case detail(Sheet)
-    case editExercise(Exercise)
 }
 
 private struct SheetRow: View {
