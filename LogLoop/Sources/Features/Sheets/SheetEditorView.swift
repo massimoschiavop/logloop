@@ -82,7 +82,7 @@ struct SheetEditorView: View {
                     WeekdayRow(selection: $weekdays)
                 }
             } footer: {
-                Text("Divide gli esercizi della scheda per settimana e per giorno: ogni giorno di ogni settimana ha i suoi esercizi.")
+                Text("Divide le attività della scheda per settimana e per giorno: ogni giorno di ogni settimana ha le sue attività.")
             }
         }
         .navigationTitle(sheet == nil ? "Nuova scheda" : "Modifica scheda")

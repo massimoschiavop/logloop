@@ -67,7 +67,7 @@ private struct TemplateEditorView: View {
             } header: {
                 Text("Timer")
             } footer: {
-                Text("Se attivo, gli esercizi nuovi delle schede hanno già il timer, con questo tempo.")
+                Text("Se attivo, le attività nuove delle schede hanno già il timer, con questo tempo.")
             }
 
             categoriesSection

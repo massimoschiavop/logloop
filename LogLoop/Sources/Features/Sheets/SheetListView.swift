@@ -67,7 +67,7 @@ struct SheetListView: View {
             .navigationDestination(for: SheetRoute.self) { route in
                 switch route {
                 case .new:
-                    // Creata la scheda, l'editor lascia il posto ai suoi esercizi.
+                    // Creata la scheda, l'editor lascia il posto alle sue attività.
                     SheetEditorView { sheet in path = [.detail(sheet)] }
                 case .edit(let sheet):
                     SheetEditorView(sheet: sheet)

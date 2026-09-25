@@ -10,7 +10,7 @@ final class TemplateCategory: Sortable {
     var sortIndex: Int = 0
     var template: Template?
 
-    /// Gli esercizi di questa categoria, nelle schede del modello: spariscono con lei.
+    /// Le attività di questa categoria, nelle schede del modello: spariscono con lei.
     @Relationship(deleteRule: .cascade, inverse: \Exercise.category)
     var exercises: [Exercise] = []
 

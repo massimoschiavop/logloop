@@ -22,9 +22,9 @@ final class Template: Sortable {
     var colorHex: String = Palette.defaultColor.hex
     var createdAt: Date = Date()
     var sortIndex: Int = 0
-    /// Tempo proposto agli esercizi con il timer.
+    /// Tempo proposto alle attività con il timer.
     var timerSeconds: Int = Exercise.defaultTimerSeconds
-    /// Se gli esercizi nuovi delle schede nascono col timer attivo.
+    /// Se le attività nuove delle schede nascono col timer attivo.
     var timerEnabledByDefault: Bool = false
 
     /// Relazioni non ordinate come le salva SwiftData: per l'ordine dell'utente usare
@@ -99,7 +99,7 @@ extension Template {
         return field
     }
 
-    /// Elimina la categoria e, con lei, i suoi esercizi in tutte le schede del modello.
+    /// Elimina la categoria e, con lei, le sue attività in tutte le schede del modello.
     func removeCategory(_ category: TemplateCategory) {
         let remaining = categories.filter { $0.identifier != category.identifier }
         category.exercises.forEach { modelContext?.delete($0) }

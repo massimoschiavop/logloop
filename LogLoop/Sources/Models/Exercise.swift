@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// Esercizio di una scheda, in una settimana e un giorno. Senza giorno (scheda senza giorni)
+/// Attività di una scheda, in una settimana e un giorno. Senza giorno (scheda senza giorni)
 /// vale per tutti i giorni; senza settimana (scheda senza settimane) sta nella prima.
 @Model
 final class Exercise: Sortable {

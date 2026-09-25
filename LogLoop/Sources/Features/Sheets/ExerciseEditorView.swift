@@ -1,8 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// Creazione e modifica di un esercizio: le modifiche arrivano al database solo con il check,
-/// tornando indietro vanno perse. Con `exercise` nullo crea un esercizio nel giorno `day`.
+/// Creazione e modifica di un'attività: le modifiche arrivano al database solo con il check,
+/// tornando indietro vanno perse. Con `exercise` nullo crea un'attività nel giorno `day`.
 struct ExerciseEditorView: View {
     let sheet: Sheet
     let day: Weekday?
@@ -68,7 +68,7 @@ struct ExerciseEditorView: View {
                 }
             }
         }
-        .navigationTitle(exercise == nil ? "Nuovo esercizio" : "Modifica esercizio")
+        .navigationTitle(exercise == nil ? "Nuova attività" : "Modifica attività")
         .navigationBarTitleDisplayMode(.inline)
         .confirmToolbarItem(isEnabled: !name.trimmed.isEmpty, action: save)
         .onAppear {
@@ -150,7 +150,7 @@ struct ExerciseEditorView: View {
             target = exercise
             target.name = name.trimmed
         } else {
-            // I nuovi esercizi vanno in fondo; senza giorni valgono per tutti.
+            // Le nuove attività vanno in fondo; senza giorni valgono per tutti.
             target = Exercise(
                 name: name.trimmed,
                 weekday: sheet.showsDays ? day : nil,

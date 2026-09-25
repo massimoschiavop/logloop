@@ -42,9 +42,9 @@ final class Sheet: Sortable {
         self.createdAt = Date()
     }
 
-    /// Gli esercizi mostrati nella settimana e nel giorno scelti, in ordine. Con i giorni ci
-    /// sono quelli del giorno più quelli validi per tutti (creati quando la scheda non li
-    /// aveva); con le settimane quelli della settimana, e nella prima anche quelli creati
+    /// Le attività mostrate nella settimana e nel giorno scelti, in ordine. Con i giorni ci
+    /// sono quelle del giorno più quelle valide per tutti (create quando la scheda non li
+    /// aveva); con le settimane quelle della settimana, e nella prima anche quelle create
     /// quando la scheda non le aveva.
     func exercises(week: Int, day: Weekday?) -> [Exercise] {
         exercisesStorage.sortedByIndex().filter { exercise in

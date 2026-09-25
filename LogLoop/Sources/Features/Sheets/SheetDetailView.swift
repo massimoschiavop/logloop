@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// Gli esercizi di una scheda. In alto, se la scheda li prevede, si scelgono la settimana
+/// Le attività di una scheda. In alto, se la scheda li prevede, si scelgono la settimana
 /// e il giorno a cui si riferiscono.
 struct SheetDetailView: View {
     let sheet: Sheet
@@ -18,19 +18,19 @@ struct SheetDetailView: View {
     @State private var scrolledPage: Page?
     /// Lega il vetro delle pastiglie scelte, che scivola da una all'altra.
     @Namespace private var chipGlass
-    /// La sezione in cui si sta scrivendo un esercizio nuovo, e il suo nome.
+    /// La sezione in cui si sta scrivendo un'attività nuova, e il suo nome.
     @State private var adding: AddTarget?
     @State private var newName = ""
     @FocusState private var isNewNameFocused: Bool
     /// Le categorie compresse, per identificativo (nullo per "Senza categoria"); valgono per
     /// tutte le pagine.
     @State private var collapsed: Set<UUID?> = []
-    /// Vero mentre si trascina un esercizio: solo allora titoli e segnaposto si sbloccano, perché
+    /// Vero mentre si trascina un'attività: solo allora titoli e segnaposto si sbloccano, perché
     /// la lista accetta il rilascio solo sopra righe non bloccate.
     @State private var isReordering = false
     /// Cambiandola la lista si ricostruisce, rimettendo a posto una riga non spostabile.
     @State private var listRevision = 0
-    /// L'esercizio aperto nell'editor, in un foglio dal basso.
+    /// L'attività aperta nell'editor, in un foglio dal basso.
     @State private var editingExercise: Exercise?
 
     /// I giorni della scheda nell'ordine della settimana.
@@ -143,7 +143,7 @@ struct SheetDetailView: View {
     }
 
     /// Una sezione per ogni categoria del modello, anche vuota per potervi aggiungere; in
-    /// cima gli esercizi senza categoria (o con una di un altro modello, o eliminata).
+    /// cima le attività senza categoria (o con una di un altro modello, o eliminata).
     private func groups(of exercises: [Exercise]) -> [ExerciseGroup] {
         let categories = sheet.template?.categories ?? []
         let ids = Set(categories.map(\.identifier))
@@ -160,7 +160,7 @@ struct SheetDetailView: View {
         return result
     }
 
-    /// Le righe di una pagina in fila: titolo di ogni categoria, i suoi esercizi e la riga per
+    /// Le righe di una pagina in fila: titolo di ogni categoria, le sue attività e la riga per
     /// aggiungerne. Stanno in un'unica lista perché il trascinamento passi da una all'altra.
     private func rows(for page: Page) -> [PageRow] {
         let groups = groups(of: sheet.exercises(week: page.week, day: page.day))
@@ -171,7 +171,7 @@ struct SheetDetailView: View {
             var rows: [PageRow] = if let title = group.category {
                 [.title(target, title.name, Color(hex: title.colorHex), group.exercises.count)]
             } else {
-                [.title(target, groups.count > 1 ? "Senza categoria" : "Esercizi", nil, group.exercises.count)]
+                [.title(target, groups.count > 1 ? "Senza categoria" : "Attività", nil, group.exercises.count)]
             }
             if !collapsed.contains(category) {
                 rows += group.exercises.map { .exercise($0, category) }
@@ -189,8 +189,8 @@ struct SheetDetailView: View {
         let rows = rows(for: page)
         return ScrollViewReader { proxy in
             List {
-                // Si sollevano solo gli esercizi: il resto è bloccato finché non se ne trascina
-                // uno (vedi `isReordering`).
+                // Si sollevano solo le attività: il resto è bloccato finché non se ne trascina
+                // una (vedi `isReordering`).
                 ForEach(rows) { row in
                     switch row {
                     case .title(let target, let title, let color, let count):
@@ -224,17 +224,17 @@ struct SheetDetailView: View {
                         }
                         .foregroundStyle(.primary)
                         .swipeToDelete { delete(exercise) }
-                        // Chiesto quando l'esercizio viene sollevato: sblocca le altre righe.
+                        // Chiesto quando l'attività viene sollevata: sblocca le altre righe.
                         .itemProvider {
                             DispatchQueue.main.async { isReordering = true }
                             return NSItemProvider()
                         }
                     case .empty:
-                        Text("Nessun esercizio")
+                        Text("Nessuna attività")
                             .foregroundStyle(.secondary)
                             .moveDisabled(!isReordering)
                     case .newName:
-                        TextField("Nome dell'esercizio", text: $newName)
+                        TextField("Nome dell'attività", text: $newName)
                             .focused($isNewNameFocused)
                             .submitLabel(.done)
                             .onSubmit(commitNewExercise)
@@ -262,8 +262,8 @@ struct SheetDetailView: View {
         }
     }
 
-    /// Un esercizio trascinato prende la categoria della riga sopra il punto in cui è lasciato:
-    /// sotto un titolo va in cima alla categoria, sotto un esercizio subito dopo di lui, sotto
+    /// Un'attività trascinata prende la categoria della riga sopra il punto in cui è lasciata:
+    /// sotto un titolo va in cima alla categoria, sotto un'attività subito dopo di lei, sotto
     /// la riga del nome nuovo in fondo alla categoria di quella riga.
     private func move(in rows: [PageRow], from source: IndexSet, to destination: Int) {
         isReordering = false
@@ -276,7 +276,7 @@ struct SheetDetailView: View {
         let others = rows.enumerated().filter { $0.offset != from }
         let above = others.last { $0.offset < destination }?.element
         let category = above?.category ?? rows.first?.category
-        // Gli esercizi della categoria di arrivo, senza quello trascinato.
+        // Le attività della categoria di arrivo, senza quella trascinata.
         let siblings = others.compactMap { item -> Exercise? in
             guard case .exercise(let exercise, let group) = item.element, group == category else { return nil }
             return exercise
@@ -301,7 +301,7 @@ struct SheetDetailView: View {
         }
     }
 
-    /// Crea l'esercizio scritto nella riga nuova, se ha un nome, e chiude la riga.
+    /// Crea l'attività scritta nella riga nuova, se ha un nome, e chiude la riga.
     private func commitNewExercise() {
         guard let target = adding else { return }
         let name = newName.trimmed
@@ -361,8 +361,8 @@ struct SheetDetailView: View {
         dayBeforeTap = nil
     }
 
-    /// Sposta un esercizio trascinato prima di `next`, o dopo `last` se `next` è nullo, e gli
-    /// dà la categoria della sezione in cui è stato lasciato.
+    /// Sposta un'attività trascinata prima di `next`, o dopo `last` se `next` è nullo, e le
+    /// dà la categoria della sezione in cui è stata lasciata.
     private func moveExercise(_ id: UUID, toCategory categoryID: UUID?, before next: UUID?, after last: UUID?) {
         var all = sheet.exercisesStorage.sortedByIndex()
         guard id != next, let from = all.firstIndex(where: { $0.identifier == id }) else { return }
@@ -370,7 +370,7 @@ struct SheetDetailView: View {
         exercise.category = categoryID.flatMap { id in
             sheet.template?.categories.first { $0.identifier == id }
         }
-        // Prima dell'esercizio su cui è stato lasciato, o dopo l'ultimo della sezione.
+        // Prima dell'attività su cui è stata lasciata, o dopo l'ultimo della sezione.
         let position = next.flatMap { id in all.firstIndex { $0.identifier == id } }
             ?? last.flatMap { id in all.firstIndex { $0.identifier == id }.map { $0 + 1 } }
             ?? all.endIndex
@@ -455,7 +455,7 @@ struct SheetDetailView: View {
     }
 }
 
-/// Gli esercizi di una categoria, o senza categoria se `category` è nulla.
+/// Le attività di una categoria, o senza categoria se `category` è nulla.
 private struct ExerciseGroup: Identifiable {
     let category: TemplateCategory?
     let exercises: [Exercise]
@@ -463,7 +463,7 @@ private struct ExerciseGroup: Identifiable {
     var id: UUID? { category?.identifier }
 }
 
-/// Dove va l'esercizio che si sta scrivendo: settimana e giorno della pagina e categoria
+/// Dove va l'attività che si sta scrivendo: settimana e giorno della pagina e categoria
 /// della sezione.
 private struct AddTarget: Hashable {
     let page: Page
@@ -497,11 +497,11 @@ private enum PageRow: Identifiable {
 }
 
 /// La prima riga di una categoria: il nome al centro, la freccia per comprimerla e il + per
-/// aggiungervi un esercizio.
+/// aggiungervi un'attività.
 private struct CategoryTitleRow: View {
     let title: String
     let color: Color?
-    /// Gli esercizi della categoria, mostrati accanto al titolo quando è compressa.
+    /// Le attività della categoria, mostrate accanto al titolo quando è compressa.
     let count: Int
     let isCollapsed: Bool
     let onToggle: () -> Void
@@ -533,7 +533,7 @@ private struct CategoryTitleRow: View {
                 .rotationEffect(.degrees(isCollapsed ? -90 : 0))
         }
         .overlay(alignment: .trailing) {
-            Button("Aggiungi esercizio", systemImage: "plus", action: onAdd)
+            Button("Aggiungi attività", systemImage: "plus", action: onAdd)
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
                 .font(.headline)
@@ -544,7 +544,7 @@ private struct CategoryTitleRow: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityValue(isCollapsed ? "Compressa" : "Espansa")
         .accessibilityAction(named: isCollapsed ? "Espandi" : "Comprimi", onToggle)
-        // Lo sfondo appena più chiaro basta a staccarla dagli esercizi, senza la riga sotto.
+        // Lo sfondo appena più chiaro basta a staccarla dalle attività, senza la riga sotto.
         .listRowSeparator(.hidden)
         .listRowBackground(
             Color(.secondarySystemGroupedBackground)
@@ -553,7 +553,7 @@ private struct CategoryTitleRow: View {
     }
 }
 
-/// Una pagina degli esercizi: una settimana e, se la scheda li prevede, un giorno.
+/// Una pagina delle attività: una settimana e, se la scheda li prevede, un giorno.
 private struct Page: Hashable, Identifiable {
     let week: Int
     let day: Weekday?
@@ -586,7 +586,7 @@ private struct ContentPopGestureDisabler: UIViewControllerRepresentable {
     }
 }
 
-/// L'intestazione in alto: da iOS 26 le pastiglie di vetro galleggiano sugli esercizi con la
+/// L'intestazione in alto: da iOS 26 le pastiglie di vetro galleggiano sulle attività con la
 /// sfumatura di sistema, prima stanno su una barra traslucida.
 private struct HeaderBar<Header: View>: ViewModifier {
     let isVisible: Bool
@@ -605,7 +605,7 @@ private struct HeaderBar<Header: View>: ViewModifier {
     }
 }
 
-/// Sulle righe degli esercizi lo swipe verso sinistra deve mostrare "Elimina" invece di
+/// Sulle righe delle attività lo swipe verso sinistra deve mostrare "Elimina" invece di
 /// cambiare pagina: lo scorrimento delle pagine aspetta che lo swipe della riga rinunci.
 /// Fuori dalle righe, o verso destra, lo swipe della riga non parte e le pagine scorrono.
 private struct RowSwipePriority: UIViewRepresentable {
@@ -737,7 +737,7 @@ private struct ChipBackground: ViewModifier {
     }
 }
 
-/// Riga di un esercizio: nome, timer e valori dei campi compilati.
+/// Riga di un'attività: nome, timer e valori dei campi compilati.
 private struct ExerciseRow: View {
     let exercise: Exercise
     let fields: [FieldDefinition]
