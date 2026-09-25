@@ -43,13 +43,20 @@ struct SettingsView: View {
                         Label("Sviluppo", systemImage: "person")
                     }
 
-                    LabeledContent {
-                        Text(appVersion)
-                    } label: {
-                        Label("Versione", systemImage: "info.circle")
+                    // Un pulsante solo per l'evidenziazione della riga al tocco.
+                    Button(action: tapVersion) {
+                        LabeledContent {
+                            Text(appVersion)
+                                .foregroundStyle(.secondary)
+                        } label: {
+                            Label {
+                                Text("Versione")
+                                    .foregroundStyle(Color.primary)
+                            } icon: {
+                                Image(systemName: "info.circle")
+                            }
+                        }
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture(perform: tapVersion)
 
                     Link(destination: URL(string: "https://github.com/massimoschiavop/logloop")!) {
                         Label("GitHub", image: "GitHub")

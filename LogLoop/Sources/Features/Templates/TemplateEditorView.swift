@@ -51,6 +51,16 @@ private struct TemplateEditorView: View {
     @FocusState private var focusedFieldID: UUID?
 
     var body: some View {
+        ScrollViewReader { proxy in
+            form
+                // La riga nuova sale a metà schermo, ben sopra la tastiera, quando questa ha
+                // finito di aprirsi.
+                .onChange(of: newCategoryID) { _, id in scrollToNewRow(id, with: proxy) }
+                .onChange(of: inlineFieldID) { _, id in scrollToNewRow(id, with: proxy) }
+        }
+    }
+
+    private var form: some View {
         Form {
             Section("Nome") {
                 TextField("Es. Pianoforte", text: $template.name)
@@ -104,6 +114,7 @@ private struct TemplateEditorView: View {
         Section {
             ForEach(template.categories) { category in
                 CategoryRow(category: category, focusedCategoryID: $focusedCategoryID)
+                    .id(category.identifier)
                     .swipeToDelete { template.removeCategory(category) }
             }
             .onMove(perform: template.moveCategories)
@@ -120,6 +131,7 @@ private struct TemplateEditorView: View {
         Section {
             ForEach(template.fields) { field in
                 fieldRow(field)
+                    .id(field.identifier)
                     .swipeToDelete { template.removeField(field) }
             }
             .onMove(perform: template.moveFields)
@@ -170,6 +182,13 @@ private struct TemplateEditorView: View {
         let field = template.addField()
         inlineFieldID = field.identifier
         focusedFieldID = field.identifier
+    }
+
+    private func scrollToNewRow(_ id: UUID?, with proxy: ScrollViewProxy) {
+        guard let id else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            withAnimation { proxy.scrollTo(id, anchor: .center) }
+        }
     }
 
     /// Scarta la categoria appena creata se è rimasta senza nome.

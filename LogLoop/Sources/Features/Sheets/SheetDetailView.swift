@@ -185,6 +185,16 @@ struct SheetDetailView: View {
         }
     }
 
+    /// Tra due titoli di fila (quello sopra è compresso) serve la riga divisoria, altrimenti
+    /// sembrano un blocco unico; tra un titolo e le sue attività basta lo sfondo diverso.
+    private func titleSeparators(for row: PageRow, in rows: [PageRow]) -> Edge.Set {
+        guard let index = rows.firstIndex(where: { $0.id == row.id }) else { return [] }
+        var edges: Edge.Set = []
+        if index > 0, case .title = rows[index - 1] { edges.insert(.top) }
+        if index + 1 < rows.count, case .title = rows[index + 1] { edges.insert(.bottom) }
+        return edges
+    }
+
     private func pageContent(for page: Page) -> some View {
         let rows = rows(for: page)
         return ScrollViewReader { proxy in
@@ -198,7 +208,8 @@ struct SheetDetailView: View {
                             title: title,
                             color: color,
                             count: count,
-                            isCollapsed: collapsed.contains(target.category)
+                            isCollapsed: collapsed.contains(target.category),
+                            separators: titleSeparators(for: row, in: rows)
                         ) {
                             withAnimation {
                                 if !collapsed.insert(target.category).inserted {
@@ -504,8 +515,12 @@ private struct CategoryTitleRow: View {
     /// Le attività della categoria, mostrate accanto al titolo quando è compressa.
     let count: Int
     let isCollapsed: Bool
+    /// I bordi su cui mostrare la riga divisoria, verso un altro titolo.
+    let separators: Edge.Set
     let onToggle: () -> Void
     let onAdd: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 8) {
@@ -544,11 +559,16 @@ private struct CategoryTitleRow: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityValue(isCollapsed ? "Compressa" : "Espansa")
         .accessibilityAction(named: isCollapsed ? "Espandi" : "Comprimi", onToggle)
-        // Lo sfondo appena più chiaro basta a staccarla dalle attività, senza la riga sotto.
-        .listRowSeparator(.hidden)
+        // Lo sfondo diverso basta a staccarla dalle attività, senza la riga sotto. In chiaro
+        // il riempimento di sistema si confonde con lo sfondo della pagina: serve un grigio pieno.
+        .listRowSeparator(separators.contains(.top) ? .visible : .hidden, edges: .top)
+        .listRowSeparator(separators.contains(.bottom) ? .visible : .hidden, edges: .bottom)
+        // La riga parte dalla freccia, non dal titolo centrato.
+        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
         .listRowBackground(
-            Color(.secondarySystemGroupedBackground)
-                .overlay(Color(.tertiarySystemFill))
+            colorScheme == .light
+                ? AnyView(Color(.systemGray5))
+                : AnyView(Color(.secondarySystemGroupedBackground).overlay(Color(.tertiarySystemFill)))
         )
     }
 }
@@ -761,6 +781,7 @@ private struct ExerciseRow: View {
                     Text(details)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
             Spacer()
