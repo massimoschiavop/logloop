@@ -20,9 +20,11 @@ final class Sheet: Sortable {
     var showsDays: Bool = false
     var weekdayMask: Int = Weekday.allMask
     /// Settimane e giorni disattivati col doppio tocco: restano nell'intestazione ma le loro
-    /// pagine non si mostrano. I giorni come maschera di bit su `Weekday`.
+    /// pagine non si mostrano. I giorni valgono per la sola settimana in cui si disattivano:
+    /// una maschera di bit su `Weekday` per settimana, dalla prima; senza settimane conta la
+    /// prima. Le settimane oltre la fine dell'elenco non hanno giorni disattivati.
     var disabledWeeks: [Int] = []
-    var disabledWeekdayMask: Int = 0
+    var disabledWeekdayMasks: [Int] = []
 
     /// Relazione non ordinata come la salva SwiftData: per l'ordine dell'utente usare
     /// `exercises(on:)`.
@@ -54,6 +56,19 @@ final class Sheet: Sortable {
         }
     }
 
+    /// I giorni disattivati nella settimana, come maschera di bit su `Weekday`.
+    func disabledWeekdayMask(week: Int) -> Int {
+        disabledWeekdayMasks.indices.contains(week - 1) ? disabledWeekdayMasks[week - 1] : 0
+    }
+
+    /// Disattiva il giorno nella sola settimana indicata, o lo riattiva se lo era.
+    func toggleWeekday(_ day: Weekday, week: Int) {
+        var masks = disabledWeekdayMasks
+        if masks.count < week { masks += Array(repeating: 0, count: week - masks.count) }
+        masks[week - 1] ^= day.bit
+        disabledWeekdayMasks = masks
+    }
+
     /// Una copia della scheda sullo stesso modello, non ancora inserita in alcun contesto.
     func duplicate(sortIndex: Int) -> Sheet {
         let copy = Sheet(title: "\(title) (copia)", template: template, sortIndex: sortIndex)
@@ -62,7 +77,7 @@ final class Sheet: Sortable {
         copy.showsDays = showsDays
         copy.weekdayMask = weekdayMask
         copy.disabledWeeks = disabledWeeks
-        copy.disabledWeekdayMask = disabledWeekdayMask
+        copy.disabledWeekdayMasks = disabledWeekdayMasks
         copy.exercisesStorage = exercisesStorage.map { $0.copy() }
         return copy
     }

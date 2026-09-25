@@ -167,6 +167,7 @@ struct ExerciseEditorView: View {
         target.fieldValues = values
             .mapValues(\.trimmed)
             .filter { fieldKeys.contains($0.key) && !$0.value.isEmpty }
+        context.nameUndo(exercise == nil ? "aggiunta attività" : "modifica attività")
         try? context.save()
         dismiss()
     }

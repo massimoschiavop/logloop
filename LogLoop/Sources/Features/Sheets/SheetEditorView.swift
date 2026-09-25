@@ -120,6 +120,7 @@ struct SheetEditorView: View {
         target.weekCount = weekCount
         target.showsDays = showsDays
         target.weekdays = weekdays
+        context.nameUndo(sheet == nil ? "creazione scheda" : "modifica scheda")
         try? context.save()
         if sheet == nil, let onCreate {
             onCreate(target)

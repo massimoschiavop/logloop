@@ -21,6 +21,7 @@
 		3B4E38F12E1DA08DEBF6A3A9 /* Template.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A856DE74CBFED3958063ED4 /* Template.swift */; };
 		54809AF794D4930394743073 /* SheetSortOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3A9C478455C8F3F4CC87BB6 /* SheetSortOrder.swift */; };
 		6BCEDE75DB305C95F2226707 /* Sortable.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9D2AE7A20C9353BB99E6DBD /* Sortable.swift */; };
+		78FABF79A9C098ED28E756F3 /* UIWindow+Shake.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE1101247B02890295B7EB83 /* UIWindow+Shake.swift */; };
 		827372ED4CF83808AFDE77E0 /* IconGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = B507E3A33359DCD6087A7CAB /* IconGrid.swift */; };
 		91295165EA11E8886C8D0932 /* DeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C167F9DFB44963F9B7ADABE /* DeveloperView.swift */; };
 		96CEDE487913A9ABF6BF7F82 /* TemplateEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AAC1769FB8765AEBAE8DBEC /* TemplateEditorView.swift */; };
@@ -77,6 +78,7 @@
 		D1305439DE1BD3DC647A9DBD /* SheetDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetDetailView.swift; sourceTree = "<group>"; };
 		D8B20AEE5741944BF70F67C4 /* DurationRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationRow.swift; sourceTree = "<group>"; };
 		D8BA58F25C55B33C7CEAE4D6 /* String+Trimmed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Trimmed.swift"; sourceTree = "<group>"; };
+		EE1101247B02890295B7EB83 /* UIWindow+Shake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIWindow+Shake.swift"; sourceTree = "<group>"; };
 		F13AFA79D52E728312076A2E /* LogLoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogLoopApp.swift; sourceTree = "<group>"; };
 		F9D2AE7A20C9353BB99E6DBD /* Sortable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sortable.swift; sourceTree = "<group>"; };
 		FC4B1782A6D5BAAF45F9669F /* LogLoop.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LogLoop.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -233,6 +235,7 @@
 				23B461AB21E83DFF55E4F640 /* Color+Hex.swift */,
 				7CD29EBDB3A944370309CA90 /* Int+Duration.swift */,
 				D8BA58F25C55B33C7CEAE4D6 /* String+Trimmed.swift */,
+				EE1101247B02890295B7EB83 /* UIWindow+Shake.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -357,6 +360,7 @@
 				96CEDE487913A9ABF6BF7F82 /* TemplateEditorView.swift in Sources */,
 				AC4C589EA707998F878C1F9D /* TemplateIconTile.swift in Sources */,
 				F8E0CEB254E8C56B19B68A4F /* TemplateListView.swift in Sources */,
+				78FABF79A9C098ED28E756F3 /* UIWindow+Shake.swift in Sources */,
 				B5636B3209106B68DC3E1702 /* Weekday.swift in Sources */,
 				E013618B12AE1187C0685161 /* WeekdayRow.swift in Sources */,
 			);

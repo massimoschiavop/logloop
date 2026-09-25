@@ -24,12 +24,14 @@ struct TemplateListView: View {
                         } label: {
                             TemplateRow(template: template)
                         }
-                        .swipeActions {
+                        // Come `swipeToDelete`: lo swipe completo non elimina.
+                        .swipeActions(allowsFullSwipe: false) {
                             DeleteButton {
                                 delete(template)
                             }
                             Button {
                                 context.insert(template.duplicate(sortIndex: templates.count))
+                                context.nameUndo("duplicazione modello")
                             } label: {
                                 Label("Duplica", systemImage: "plus.square.on.square")
                             }
@@ -75,14 +77,20 @@ struct TemplateListView: View {
             return
         }
         let remaining = templates.filter { $0.persistentModelID != template.persistentModelID }
+        // Come per le attività di una scheda: niente cascata su oggetti mai caricati, che con
+        // l'annulla attivo manda SwiftData in crash.
+        template.categoriesStorage.forEach(context.delete)
+        template.fieldsStorage.forEach(context.delete)
         context.delete(template)
         remaining.renumber()
+        context.nameUndo("eliminazione modello")
     }
 
     private func move(from source: IndexSet, to destination: Int) {
         var list = templates
         list.move(fromOffsets: source, toOffset: destination)
         list.renumber()
+        context.nameUndo("spostamento modello")
     }
 }
 

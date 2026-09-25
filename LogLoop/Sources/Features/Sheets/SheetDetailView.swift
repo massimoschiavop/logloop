@@ -4,11 +4,17 @@ import SwiftUI
 /// Le attività di una scheda. In alto, se la scheda li prevede, si scelgono la settimana
 /// e il giorno a cui si riferiscono.
 struct SheetDetailView: View {
+    /// Chiave in cui è salvata l'ultima pagina guardata in ogni scheda, da cui la scheda
+    /// riparte. Sta fuori dal database perché scorrere le pagine non diventi una modifica da
+    /// annullare scuotendo il telefono.
+    static let lastPagesStorageKey = "sheetLastPages"
+
     let sheet: Sheet
 
     @Environment(\.modelContext) private var context
-    @State private var selectedWeek = 1
-    @State private var selectedDay = Weekday.today
+    /// Partono dall'ultima pagina guardata nella scheda.
+    @State private var selectedWeek: Int
+    @State private var selectedDay: Weekday
     /// Settimana e giorno mostrati prima dell'ultimo tocco su una pastiglia: il doppio tocco
     /// che la disattiva ci riporta lì, annullando lo spostamento del primo tocco.
     @State private var weekBeforeTap: Int?
@@ -33,6 +39,31 @@ struct SheetDetailView: View {
     /// L'attività aperta nell'editor, in un foglio dal basso.
     @State private var editingExercise: Exercise?
 
+    init(sheet: Sheet) {
+        self.sheet = sheet
+        let last = Self.lastPages[Self.pageKey(of: sheet)] ?? []
+        _selectedWeek = State(initialValue: last.first ?? 1)
+        _selectedDay = State(initialValue: last.dropFirst().first.flatMap(Weekday.init(rawValue:)) ?? .monday)
+    }
+
+    /// Per ogni scheda la settimana e il giorno (`Weekday.rawValue`) dell'ultima pagina.
+    private static var lastPages: [String: [Int]] {
+        get { UserDefaults.standard.dictionary(forKey: lastPagesStorageKey) as? [String: [Int]] ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: lastPagesStorageKey) }
+    }
+
+    /// L'identificativo persistente della scheda, che non cambia tra un avvio e l'altro.
+    private static func pageKey(of sheet: Sheet) -> String {
+        let data = try? JSONEncoder().encode(sheet.persistentModelID)
+        return data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+    }
+
+    private func rememberPage(_ page: Page) {
+        let previous = Self.lastPages[Self.pageKey(of: sheet)] ?? []
+        let day = page.day?.rawValue ?? previous.dropFirst().first ?? Weekday.monday.rawValue
+        Self.lastPages[Self.pageKey(of: sheet)] = [page.week, day]
+    }
+
     /// I giorni della scheda nell'ordine della settimana.
     private var days: [Weekday] {
         Weekday.allCases.filter { sheet.weekdays.contains($0) }
@@ -41,14 +72,18 @@ struct SheetDetailView: View {
     private var weekCount: Int { sheet.showsWeeks ? sheet.weekCount : 1 }
 
     /// Le settimane e i giorni non disattivati, gli unici con una pagina. Se lo fossero tutti
-    /// (es. dopo aver tolto settimane dall'editor) valgono tutti.
+    /// (es. dopo aver tolto settimane dall'editor) valgono tutti. I giorni sono quelli della
+    /// settimana mostrata.
     private var enabledWeeks: [Int] {
         let all = Array(1...weekCount)
         let enabled = sheet.showsWeeks ? all.filter { !sheet.disabledWeeks.contains($0) } : all
         return enabled.isEmpty ? all : enabled
     }
-    private var enabledDays: [Weekday] {
-        let enabled = days.filter { sheet.disabledWeekdayMask & $0.bit == 0 }
+    private var enabledDays: [Weekday] { enabledDays(week: currentWeek) }
+
+    private func enabledDays(week: Int) -> [Weekday] {
+        let mask = sheet.disabledWeekdayMask(week: week)
+        let enabled = days.filter { mask & $0.bit == 0 }
         return enabled.isEmpty ? days : enabled
     }
 
@@ -71,7 +106,8 @@ struct SheetDetailView: View {
     /// Tutte le pagine attive in fila, giorno dopo giorno e settimana dopo settimana.
     private var pages: [Page] {
         enabledWeeks.flatMap { week in
-            (sheet.showsDays && !days.isEmpty ? enabledDays.map(Optional.some) : [nil]).map { Page(week: week, day: $0) }
+            (sheet.showsDays && !days.isEmpty ? enabledDays(week: week).map(Optional.some) : [nil])
+                .map { Page(week: week, day: $0) }
         }
     }
 
@@ -93,6 +129,16 @@ struct SheetDetailView: View {
     }
 
     var body: some View {
+        // Eliminata la scheda (es. svuotando l'app) la lista chiude questa schermata, ma può
+        // ridisegnarla prima: leggere la scheda eliminata manderebbe l'app in crash.
+        if sheet.isDeleted || sheet.modelContext == nil {
+            Color.clear
+        } else {
+            pager
+        }
+    }
+
+    private var pager: some View {
         // Le pagine scorrono seguendo il dito e si fermano a una alla volta.
         ScrollView(.horizontal) {
             LazyHStack(spacing: 0) {
@@ -104,11 +150,15 @@ struct SheetDetailView: View {
             .scrollTargetLayout()
         }
         .scrollTargetBehavior(.paging)
+        // Con una pagina sola lo scorrimento non deve rimbalzare: si prenderebbe lo swipe
+        // delle righe, e senza altre pagine `RowSwipePriority` non ha niente da mettere in attesa.
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $scrolledPage)
         .onAppear { scrolledPage = currentPage }
         .onChange(of: scrolledPage) { follow(scrolledPage) }
         .onChange(of: currentPage) {
+            rememberPage(currentPage)
             // Scelta dalle pastiglie: le pagine scorrono fin lì.
             guard scrolledPage != currentPage else { return }
             withAnimation(.snappy(duration: 0.3)) { scrolledPage = currentPage }
@@ -331,6 +381,7 @@ struct SheetDetailView: View {
         exercise.category = sheet.template?.categories.first { $0.identifier == target.category }
         exercise.sheet = sheet
         context.insert(exercise)
+        context.nameUndo("aggiunta attività")
         try? context.save()
     }
 
@@ -357,18 +408,21 @@ struct SheetDetailView: View {
             // Resta sulla pagina mostrata, anche riattivando quella scelta prima.
             selectedWeek = currentWeek
         }
+        context.nameUndo(sheet.disabledWeeks.contains(week) ? "disattivazione settimana" : "riattivazione settimana")
         weekBeforeTap = nil
     }
 
-    /// Come `toggleWeek(_:)`, per un giorno.
+    /// Come `toggleWeek(_:)`, per un giorno della sola settimana mostrata.
     private func toggleDay(_ day: Weekday) {
-        let isDisabled = sheet.disabledWeekdayMask & day.bit != 0
+        let week = currentWeek
+        let isDisabled = sheet.disabledWeekdayMask(week: week) & day.bit != 0
         guard isDisabled || enabledDays.count > 1 else { return }
         withAnimation(.snappy(duration: 0.3)) {
-            sheet.disabledWeekdayMask ^= day.bit
+            sheet.toggleWeekday(day, week: week)
             if !isDisabled, let dayBeforeTap, enabledDays.contains(dayBeforeTap) { selectedDay = dayBeforeTap }
             if let currentDay { selectedDay = currentDay }
         }
+        context.nameUndo(isDisabled ? "riattivazione giorno" : "disattivazione giorno")
         dayBeforeTap = nil
     }
 
@@ -387,6 +441,7 @@ struct SheetDetailView: View {
             ?? all.endIndex
         all.insert(exercise, at: position)
         withAnimation { all.renumber() }
+        context.nameUndo("spostamento attività")
     }
 
     private func delete(_ exercise: Exercise) {
@@ -394,10 +449,15 @@ struct SheetDetailView: View {
             .filter { $0.identifier != exercise.identifier }
         context.delete(exercise)
         remaining.renumber()
+        context.nameUndo("eliminazione attività")
     }
 
     private var header: some View {
         VStack(spacing: 10) {
+            // Stacca le pastiglie dalla barra di navigazione, come tra settimane e giorni.
+            Divider()
+                .padding(.horizontal)
+                .padding(.vertical, 2)
             if sheet.showsWeeks {
                 // Centrate quando ci stanno, altrimenti scorrono in orizzontale.
                 ViewThatFits(in: .horizontal) {

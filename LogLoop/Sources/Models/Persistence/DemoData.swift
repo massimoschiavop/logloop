@@ -5,11 +5,14 @@ import SwiftData
 enum DemoData {
     /// Elimina tutti i dati salvati: modelli, schede e ciò che contengono.
     static func eraseAll(in context: ModelContext) {
-        deleteAll(Sheet.self, in: context)
+        // Prima ciò che è contenuto, poi schede e modelli: così nessuna eliminazione avviene a
+        // cascata su oggetti mai caricati, che con l'annulla attivo manda SwiftData in crash.
         deleteAll(Exercise.self, in: context)
-        deleteAll(Template.self, in: context)
         deleteAll(TemplateCategory.self, in: context)
         deleteAll(FieldDefinition.self, in: context)
+        deleteAll(Sheet.self, in: context)
+        deleteAll(Template.self, in: context)
+        context.nameUndo("svuotamento dell'app")
         try? context.save()
     }
 
@@ -34,6 +37,7 @@ enum DemoData {
             sheet.sortIndex = sheetOffset + offset
             context.insert(sheet)
         }
+        context.nameUndo("aggiunta dei dati di prova")
         try? context.save()
     }
 

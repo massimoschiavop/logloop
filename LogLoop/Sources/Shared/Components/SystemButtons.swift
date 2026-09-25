@@ -41,7 +41,8 @@ struct ConfirmButton: View {
 extension View {
     /// Eliminazione con lo swipe tramite il pulsante Elimina di sistema.
     func swipeToDelete(perform action: @escaping () -> Void) -> some View {
-        swipeActions {
+        // Lo swipe completo non elimina: il cestino va toccato.
+        swipeActions(allowsFullSwipe: false) {
             DeleteButton(action: action)
         }
     }

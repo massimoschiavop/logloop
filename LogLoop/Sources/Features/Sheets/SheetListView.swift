@@ -36,12 +36,14 @@ struct SheetListView: View {
                             NavigationLink(value: SheetRoute.detail(sheet)) {
                                 SheetRow(sheet: sheet)
                             }
-                            .swipeActions {
+                            // Come `swipeToDelete`: lo swipe completo non elimina.
+                            .swipeActions(allowsFullSwipe: false) {
                                 DeleteButton {
                                     delete(sheet)
                                 }
                                 Button {
                                     context.insert(sheet.duplicate(sortIndex: manualSheets.count))
+                                    context.nameUndo("duplicazione scheda")
                                 } label: {
                                     Label("Duplica", systemImage: "plus.square.on.square")
                                 }
@@ -64,17 +66,32 @@ struct SheetListView: View {
                     Button("Nuova scheda", systemImage: "plus") { path.append(.new) }
                 }
             }
+            // Una scheda eliminata altrove (es. svuotando l'app) chiude le sue schermate: mostrarle
+            // vorrebbe dire leggere un oggetto che non c'è più.
+            .onChange(of: manualSheets.map(\.persistentModelID)) { _, ids in
+                let existing = Set(ids)
+                path = Array(path.prefix { $0.sheet.map { existing.contains($0.persistentModelID) } ?? true })
+            }
             .navigationDestination(for: SheetRoute.self) { route in
-                switch route {
-                case .new:
-                    // Creata la scheda, l'editor lascia il posto alle sue attività.
-                    SheetEditorView { sheet in path = [.detail(sheet)] }
-                case .edit(let sheet):
-                    SheetEditorView(sheet: sheet)
-                case .detail(let sheet):
-                    SheetDetailView(sheet: sheet)
+                if let sheet = route.sheet, sheet.isDeleted || sheet.modelContext == nil {
+                    Color.clear
+                } else {
+                    destination(for: route)
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func destination(for route: SheetRoute) -> some View {
+        switch route {
+        case .new:
+            // Creata la scheda, l'editor lascia il posto alle sue attività.
+            SheetEditorView { sheet in path = [.detail(sheet)] }
+        case .edit(let sheet):
+            SheetEditorView(sheet: sheet)
+        case .detail(let sheet):
+            SheetDetailView(sheet: sheet)
         }
     }
 
@@ -99,14 +116,19 @@ struct SheetListView: View {
 
     private func delete(_ sheet: Sheet) {
         let remaining = manualSheets.filter { $0.persistentModelID != sheet.persistentModelID }
+        // Le attività si eliminano una per una invece di lasciarle alla cascata: con l'annulla
+        // attivo SwiftData va in crash eliminando a cascata oggetti mai caricati.
+        sheet.exercisesStorage.forEach(context.delete)
         context.delete(sheet)
         remaining.renumber()
+        context.nameUndo("eliminazione scheda")
     }
 
     private func move(from source: IndexSet, to destination: Int) {
         var list = manualSheets
         list.move(fromOffsets: source, toOffset: destination)
         list.renumber()
+        context.nameUndo("spostamento scheda")
     }
 }
 
@@ -115,6 +137,14 @@ enum SheetRoute: Hashable {
     case new
     case edit(Sheet)
     case detail(Sheet)
+
+    /// La scheda mostrata, se c'è.
+    var sheet: Sheet? {
+        switch self {
+        case .new: nil
+        case .edit(let sheet), .detail(let sheet): sheet
+        }
+    }
 }
 
 private struct SheetRow: View {

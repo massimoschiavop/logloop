@@ -12,6 +12,7 @@ struct DeveloperView: View {
     @State private var isConfirmingReset = false
     @State private var isConfirmingPopulate = false
     @State private var didPopulate = false
+    @State private var didReset = false
 
     var body: some View {
         Form {
@@ -72,6 +73,12 @@ struct DeveloperView: View {
         .navigationTitle("Sviluppatore")
         .navigationBarTitleDisplayMode(.inline)
         .sensoryFeedback(.success, trigger: didPopulate) { _, done in done }
+        .sensoryFeedback(.success, trigger: didReset) { _, done in done }
+        .alert("App svuotata", isPresented: $didReset) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Modelli, schede e attività sono stati eliminati e le preferenze riportate ai valori iniziali.")
+        }
         .alert("Dati di prova aggiunti", isPresented: $didPopulate) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -82,8 +89,14 @@ struct DeveloperView: View {
     private func reset() {
         DemoData.eraseAll(in: context)
         let defaults = UserDefaults.standard
-        [AppTheme.storageKey, SheetSortOrder.storageKey, SheetSortOrder.ascendingStorageKey]
+        [
+            AppTheme.storageKey,
+            SheetSortOrder.storageKey,
+            SheetSortOrder.ascendingStorageKey,
+            SheetDetailView.lastPagesStorageKey
+        ]
             .forEach(defaults.removeObject)
+        didReset = true
     }
 }
 

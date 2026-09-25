@@ -6,6 +6,8 @@ struct SettingsView: View {
     /// I tocchi di fila sulla versione: al quinto si sblocca il menu sviluppatore.
     @State private var versionTaps = 0
     @State private var lastVersionTap = Date.distantPast
+    /// Vero per un istante dopo ogni tocco sulla versione, per evidenziare la riga.
+    @State private var isVersionHighlighted = false
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–"
@@ -43,20 +45,20 @@ struct SettingsView: View {
                         Label("Sviluppo", systemImage: "person")
                     }
 
-                    // Un pulsante solo per l'evidenziazione della riga al tocco.
-                    Button(action: tapVersion) {
-                        LabeledContent {
-                            Text(appVersion)
-                                .foregroundStyle(.secondary)
-                        } label: {
-                            Label {
-                                Text("Versione")
-                                    .foregroundStyle(Color.primary)
-                            } icon: {
-                                Image(systemName: "info.circle")
-                            }
-                        }
+                    // L'evidenziazione di sistema dei pulsanti nelle liste arriva in ritardo e
+                    // con i tocchi rapidi può saltare: la riga lampeggia a ogni tocco.
+                    LabeledContent {
+                        Text(appVersion)
+                    } label: {
+                        Label("Versione", systemImage: "info.circle")
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: tapVersion)
+                    .listRowBackground(
+                        isVersionHighlighted
+                            ? Color(.systemGray4)
+                            : Color(.secondarySystemGroupedBackground)
+                    )
 
                     Link(destination: URL(string: "https://github.com/massimoschiavop/logloop")!) {
                         Label("GitHub", image: "GitHub")
@@ -85,6 +87,11 @@ struct SettingsView: View {
 
     /// Conta i tocchi ravvicinati sulla versione; una pausa più lunga ricomincia da capo.
     private func tapVersion() {
+        isVersionHighlighted = true
+        // Spenta dopo un attimo: nello stesso ciclo i due cambi si annullerebbero.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeOut(duration: 0.3)) { isVersionHighlighted = false }
+        }
         guard !isDeveloperUnlocked else { return }
         let now = Date()
         versionTaps = now.timeIntervalSince(lastVersionTap) < 1 ? versionTaps + 1 : 1
