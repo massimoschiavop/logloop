@@ -2,8 +2,15 @@ import Foundation
 import SwiftData
 
 enum SampleData {
+    /// Ricorda che la semina è già avvenuta, così dopo "Svuota l'app" i modelli non tornano.
+    private static let seededStorageKey = "didSeedSampleData"
+
     /// Semina due modelli di esempio al primo avvio, così l'app non parte vuota.
     static func seedIfNeeded(in context: ModelContext) {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: seededStorageKey) else { return }
+        defaults.set(true, forKey: seededStorageKey)
+
         let existing = try? context.fetchCount(FetchDescriptor<Template>())
         guard existing == 0 else { return }
 

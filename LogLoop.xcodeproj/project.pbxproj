@@ -22,6 +22,7 @@
 		54809AF794D4930394743073 /* SheetSortOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3A9C478455C8F3F4CC87BB6 /* SheetSortOrder.swift */; };
 		6BCEDE75DB305C95F2226707 /* Sortable.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9D2AE7A20C9353BB99E6DBD /* Sortable.swift */; };
 		827372ED4CF83808AFDE77E0 /* IconGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = B507E3A33359DCD6087A7CAB /* IconGrid.swift */; };
+		91295165EA11E8886C8D0932 /* DeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C167F9DFB44963F9B7ADABE /* DeveloperView.swift */; };
 		96CEDE487913A9ABF6BF7F82 /* TemplateEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AAC1769FB8765AEBAE8DBEC /* TemplateEditorView.swift */; };
 		9EC14C17ADCF6B3E2DCA9629 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5CF4FA58F15633FA05D0FA99 /* Assets.xcassets */; };
 		A4CD825288E68F54395692B7 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A126504BCA37E3AFD266A9C /* SampleData.swift */; };
@@ -35,6 +36,7 @@
 		C9B48EF15496A8FCA23CD70C /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23B461AB21E83DFF55E4F640 /* Color+Hex.swift */; };
 		CB1E08373017FDE201BE82C2 /* SheetEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BB7A0BD1A51CD7E9CF2EE5 /* SheetEditorView.swift */; };
 		CD7C0DB72FBA67163C7AF14B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C15314EB0C35E3EAC6D7DD5 /* SettingsView.swift */; };
+		CEDEBC63C199F62B7DB2F28C /* DemoData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E21B801A729D094B340885D /* DemoData.swift */; };
 		E013618B12AE1187C0685161 /* WeekdayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B87086A6EC20DF8423B1148 /* WeekdayRow.swift */; };
 		E17D96B6AF0B026E1243169F /* LogLoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13AFA79D52E728312076A2E /* LogLoopApp.swift */; };
 		E8ABFD6E8328E946CD1BF9F4 /* DurationRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8B20AEE5741944BF70F67C4 /* DurationRow.swift */; };
@@ -49,9 +51,11 @@
 		1B87086A6EC20DF8423B1148 /* WeekdayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekdayRow.swift; sourceTree = "<group>"; };
 		23B461AB21E83DFF55E4F640 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		2C15314EB0C35E3EAC6D7DD5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		3C167F9DFB44963F9B7ADABE /* DeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperView.swift; sourceTree = "<group>"; };
 		442B83834CC48A3D5F205EBD /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		5AAC1769FB8765AEBAE8DBEC /* TemplateEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateEditorView.swift; sourceTree = "<group>"; };
 		5CF4FA58F15633FA05D0FA99 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		5E21B801A729D094B340885D /* DemoData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoData.swift; sourceTree = "<group>"; };
 		669EA247D1BA70E656C767CF /* ColorSwatchRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSwatchRow.swift; sourceTree = "<group>"; };
 		77BB7A0BD1A51CD7E9CF2EE5 /* SheetEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetEditorView.swift; sourceTree = "<group>"; };
 		7CD29EBDB3A944370309CA90 /* Int+Duration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Int+Duration.swift"; sourceTree = "<group>"; };
@@ -126,6 +130,7 @@
 		36A833C4DEBA69860F1E5840 /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
+				5E21B801A729D094B340885D /* DemoData.swift */,
 				7D0835CFFA502238F15FA0EE /* Persistence.swift */,
 				0A126504BCA37E3AFD266A9C /* SampleData.swift */,
 			);
@@ -175,6 +180,7 @@
 		8F0FEAE58471F61D64B1B5CC /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				3C167F9DFB44963F9B7ADABE /* DeveloperView.swift */,
 				2C15314EB0C35E3EAC6D7DD5 /* SettingsView.swift */,
 			);
 			path = Settings;
@@ -323,6 +329,8 @@
 				AAE5C3ACB8BE98BF27784579 /* CategoryRow.swift in Sources */,
 				C9B48EF15496A8FCA23CD70C /* Color+Hex.swift in Sources */,
 				F0AEC4BCCB6EEF31D669E432 /* ColorSwatchRow.swift in Sources */,
+				CEDEBC63C199F62B7DB2F28C /* DemoData.swift in Sources */,
+				91295165EA11E8886C8D0932 /* DeveloperView.swift in Sources */,
 				E8ABFD6E8328E946CD1BF9F4 /* DurationRow.swift in Sources */,
 				0910FBDEE4B4D07E4F5CEFEC /* Exercise.swift in Sources */,
 				AE5BC49C2B436ED6796A18F2 /* ExerciseEditorView.swift in Sources */,

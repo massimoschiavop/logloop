@@ -7,6 +7,8 @@ struct LogLoopApp: App {
     private let container: ModelContainer
 
     init() {
+        // Il menu sviluppatore resta sbloccato solo fino alla chiusura dell'app.
+        UserDefaults.standard.removeObject(forKey: DeveloperView.unlockedStorageKey)
         container = Persistence.makeContainer()
         SampleData.seedIfNeeded(in: container.mainContext)
     }
