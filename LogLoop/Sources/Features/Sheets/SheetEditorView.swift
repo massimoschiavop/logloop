@@ -2,9 +2,11 @@ import SwiftData
 import SwiftUI
 
 /// Creazione e modifica di una scheda: le modifiche arrivano al database solo con il check,
-/// tornando indietro vanno perse. Con `sheet` nullo crea una scheda nuova.
+/// tornando indietro vanno perse. Con `sheet` nullo crea una scheda nuova e la passa a
+/// `onCreate`, che decide dove andare dopo; in modifica si torna indietro.
 struct SheetEditorView: View {
     let sheet: Sheet?
+    var onCreate: ((Sheet) -> Void)?
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
@@ -18,8 +20,9 @@ struct SheetEditorView: View {
     @State private var weekdays: Set<Weekday>
     @FocusState private var isTitleFocused: Bool
 
-    init(sheet: Sheet? = nil) {
+    init(sheet: Sheet? = nil, onCreate: ((Sheet) -> Void)? = nil) {
         self.sheet = sheet
+        self.onCreate = onCreate
         _title = State(initialValue: sheet?.title ?? "")
         _template = State(initialValue: sheet?.template)
         _showsWeeks = State(initialValue: sheet?.showsWeeks ?? false)
@@ -116,6 +119,10 @@ struct SheetEditorView: View {
         target.showsDays = showsDays
         target.weekdays = weekdays
         try? context.save()
-        dismiss()
+        if sheet == nil, let onCreate {
+            onCreate(target)
+        } else {
+            dismiss()
+        }
     }
 }

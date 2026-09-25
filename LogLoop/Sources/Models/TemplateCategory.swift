@@ -10,6 +10,10 @@ final class TemplateCategory: Sortable {
     var sortIndex: Int = 0
     var template: Template?
 
+    /// Gli esercizi di questa categoria: eliminandola restano senza categoria.
+    @Relationship(deleteRule: .nullify, inverse: \Exercise.category)
+    var exercises: [Exercise] = []
+
     init(name: String, colorHex: String = Palette.defaultColor.hex, sortIndex: Int = 0) {
         self.identifier = UUID()
         self.name = name

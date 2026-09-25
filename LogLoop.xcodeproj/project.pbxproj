@@ -7,8 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0910FBDEE4B4D07E4F5CEFEC /* Exercise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A065A49AD35BA5D704567F7 /* Exercise.swift */; };
 		0A29142082346E13ED546BCB /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 442B83834CC48A3D5F205EBD /* AppTheme.swift */; };
 		0F9AA7F2F8BD3513A14195F1 /* Sheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1677C1641FD4D677A5956F0 /* Sheet.swift */; };
+		159037C8D1DE2CFCDEB9E5B1 /* Int+Duration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CD29EBDB3A944370309CA90 /* Int+Duration.swift */; };
 		1DD8F5239672751B177458D7 /* SystemButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84EFC6324F50F13B94D76404 /* SystemButtons.swift */; };
 		1E4E82045BAD1598F7F7B025 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0835CFFA502238F15FA0EE /* Persistence.swift */; };
 		23598BE78C533120032F6CB8 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9773E57BEA81A62E51680424 /* RootTabView.swift */; };
@@ -26,18 +28,22 @@
 		A5FD2282D544721F57D65601 /* TemplateCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 948EB55F2231324AAAF62788 /* TemplateCategory.swift */; };
 		AAE5C3ACB8BE98BF27784579 /* CategoryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 143CB74738A301E05172C0B7 /* CategoryRow.swift */; };
 		AC4C589EA707998F878C1F9D /* TemplateIconTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A5B02F2D8449DB83268045B /* TemplateIconTile.swift */; };
+		AE5BC49C2B436ED6796A18F2 /* ExerciseEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFCB2AA73900D48A2B6D518A /* ExerciseEditorView.swift */; };
 		B5636B3209106B68DC3E1702 /* Weekday.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0F2BCF5226D957356513D3 /* Weekday.swift */; };
 		B6E5F8A610DCED60064EA13B /* SheetListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E030781E97B42BFC57308FB /* SheetListView.swift */; };
+		B8740FFB6378DA9B9C507118 /* SheetDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1305439DE1BD3DC647A9DBD /* SheetDetailView.swift */; };
 		C9B48EF15496A8FCA23CD70C /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23B461AB21E83DFF55E4F640 /* Color+Hex.swift */; };
 		CB1E08373017FDE201BE82C2 /* SheetEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BB7A0BD1A51CD7E9CF2EE5 /* SheetEditorView.swift */; };
 		CD7C0DB72FBA67163C7AF14B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C15314EB0C35E3EAC6D7DD5 /* SettingsView.swift */; };
 		E013618B12AE1187C0685161 /* WeekdayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B87086A6EC20DF8423B1148 /* WeekdayRow.swift */; };
 		E17D96B6AF0B026E1243169F /* LogLoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13AFA79D52E728312076A2E /* LogLoopApp.swift */; };
+		E8ABFD6E8328E946CD1BF9F4 /* DurationRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8B20AEE5741944BF70F67C4 /* DurationRow.swift */; };
 		F0AEC4BCCB6EEF31D669E432 /* ColorSwatchRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669EA247D1BA70E656C767CF /* ColorSwatchRow.swift */; };
 		F8E0CEB254E8C56B19B68A4F /* TemplateListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 941A86EF9C86E3A9EC23AA32 /* TemplateListView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0A065A49AD35BA5D704567F7 /* Exercise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exercise.swift; sourceTree = "<group>"; };
 		0A126504BCA37E3AFD266A9C /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		143CB74738A301E05172C0B7 /* CategoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRow.swift; sourceTree = "<group>"; };
 		1B87086A6EC20DF8423B1148 /* WeekdayRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekdayRow.swift; sourceTree = "<group>"; };
@@ -48,6 +54,7 @@
 		5CF4FA58F15633FA05D0FA99 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		669EA247D1BA70E656C767CF /* ColorSwatchRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSwatchRow.swift; sourceTree = "<group>"; };
 		77BB7A0BD1A51CD7E9CF2EE5 /* SheetEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetEditorView.swift; sourceTree = "<group>"; };
+		7CD29EBDB3A944370309CA90 /* Int+Duration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Int+Duration.swift"; sourceTree = "<group>"; };
 		7D0835CFFA502238F15FA0EE /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
 		84EFC6324F50F13B94D76404 /* SystemButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemButtons.swift; sourceTree = "<group>"; };
 		872F529DA66D4683CDE3A53A /* FieldDefinitionEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldDefinitionEditorView.swift; sourceTree = "<group>"; };
@@ -62,6 +69,9 @@
 		AE8CC93531EE1DBA0965F1EC /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		B1677C1641FD4D677A5956F0 /* Sheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sheet.swift; sourceTree = "<group>"; };
 		B507E3A33359DCD6087A7CAB /* IconGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconGrid.swift; sourceTree = "<group>"; };
+		BFCB2AA73900D48A2B6D518A /* ExerciseEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseEditorView.swift; sourceTree = "<group>"; };
+		D1305439DE1BD3DC647A9DBD /* SheetDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetDetailView.swift; sourceTree = "<group>"; };
+		D8B20AEE5741944BF70F67C4 /* DurationRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationRow.swift; sourceTree = "<group>"; };
 		D8BA58F25C55B33C7CEAE4D6 /* String+Trimmed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Trimmed.swift"; sourceTree = "<group>"; };
 		F13AFA79D52E728312076A2E /* LogLoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogLoopApp.swift; sourceTree = "<group>"; };
 		F9D2AE7A20C9353BB99E6DBD /* Sortable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sortable.swift; sourceTree = "<group>"; };
@@ -84,6 +94,7 @@
 		239DAF952F2F607835ADBB16 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				0A065A49AD35BA5D704567F7 /* Exercise.swift */,
 				A5CCDCB1C343B42645A4528B /* FieldDefinition.swift */,
 				B1677C1641FD4D677A5956F0 /* Sheet.swift */,
 				F9D2AE7A20C9353BB99E6DBD /* Sortable.swift */,
@@ -142,6 +153,8 @@
 		4E74BFFD2D3DD56C9279F7A7 /* Sheets */ = {
 			isa = PBXGroup;
 			children = (
+				BFCB2AA73900D48A2B6D518A /* ExerciseEditorView.swift */,
+				D1305439DE1BD3DC647A9DBD /* SheetDetailView.swift */,
 				77BB7A0BD1A51CD7E9CF2EE5 /* SheetEditorView.swift */,
 				9E030781E97B42BFC57308FB /* SheetListView.swift */,
 				A3A9C478455C8F3F4CC87BB6 /* SheetSortOrder.swift */,
@@ -212,6 +225,7 @@
 			isa = PBXGroup;
 			children = (
 				23B461AB21E83DFF55E4F640 /* Color+Hex.swift */,
+				7CD29EBDB3A944370309CA90 /* Int+Duration.swift */,
 				D8BA58F25C55B33C7CEAE4D6 /* String+Trimmed.swift */,
 			);
 			path = Extensions;
@@ -220,6 +234,7 @@
 		E99B484602E75F656972B887 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				D8B20AEE5741944BF70F67C4 /* DurationRow.swift */,
 				84EFC6324F50F13B94D76404 /* SystemButtons.swift */,
 			);
 			path = Components;
@@ -308,9 +323,13 @@
 				AAE5C3ACB8BE98BF27784579 /* CategoryRow.swift in Sources */,
 				C9B48EF15496A8FCA23CD70C /* Color+Hex.swift in Sources */,
 				F0AEC4BCCB6EEF31D669E432 /* ColorSwatchRow.swift in Sources */,
+				E8ABFD6E8328E946CD1BF9F4 /* DurationRow.swift in Sources */,
+				0910FBDEE4B4D07E4F5CEFEC /* Exercise.swift in Sources */,
+				AE5BC49C2B436ED6796A18F2 /* ExerciseEditorView.swift in Sources */,
 				352EA02544CCFA1801F7E341 /* FieldDefinition.swift in Sources */,
 				3680C1C17F23C026AB7F318D /* FieldDefinitionEditorView.swift in Sources */,
 				827372ED4CF83808AFDE77E0 /* IconGrid.swift in Sources */,
+				159037C8D1DE2CFCDEB9E5B1 /* Int+Duration.swift in Sources */,
 				E17D96B6AF0B026E1243169F /* LogLoopApp.swift in Sources */,
 				3ABDA83A26BD7C6C82C25BCE /* Palette.swift in Sources */,
 				1E4E82045BAD1598F7F7B025 /* Persistence.swift in Sources */,
@@ -318,6 +337,7 @@
 				A4CD825288E68F54395692B7 /* SampleData.swift in Sources */,
 				CD7C0DB72FBA67163C7AF14B /* SettingsView.swift in Sources */,
 				0F9AA7F2F8BD3513A14195F1 /* Sheet.swift in Sources */,
+				B8740FFB6378DA9B9C507118 /* SheetDetailView.swift in Sources */,
 				CB1E08373017FDE201BE82C2 /* SheetEditorView.swift in Sources */,
 				B6E5F8A610DCED60064EA13B /* SheetListView.swift in Sources */,
 				54809AF794D4930394743073 /* SheetSortOrder.swift in Sources */,

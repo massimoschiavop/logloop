@@ -26,6 +26,12 @@ enum Weekday: Int, CaseIterable, Identifiable {
 
     var bit: Int { 1 << rawValue }
 
+    /// Il giorno di oggi. `Calendar` conta da domenica (1) a sabato (7).
+    static var today: Weekday {
+        let weekday = Calendar.current.component(.weekday, from: Date())
+        return Weekday(rawValue: (weekday + 5) % 7) ?? .monday
+    }
+
     static func set(fromMask mask: Int) -> Set<Weekday> {
         Set(allCases.filter { mask & $0.bit != 0 })
     }

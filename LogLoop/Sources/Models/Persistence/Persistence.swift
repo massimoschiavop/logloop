@@ -5,7 +5,8 @@ enum Persistence {
         Template.self,
         TemplateCategory.self,
         FieldDefinition.self,
-        Sheet.self
+        Sheet.self,
+        Exercise.self
     ])
 
     /// Il container dell'app; `inMemory` serve per le anteprime.

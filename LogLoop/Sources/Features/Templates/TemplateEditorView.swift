@@ -61,6 +61,12 @@ private struct TemplateEditorView: View {
                 ColorSwatchRow(selection: $template.colorHex)
             }
 
+            Section {
+                DurationRow(title: "Tempo timer", seconds: $template.timerSeconds)
+            } footer: {
+                Text("Il tempo proposto agli esercizi con il timer.")
+            }
+
             categoriesSection
             fieldsSection
         }

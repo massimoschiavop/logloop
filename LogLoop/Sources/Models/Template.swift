@@ -22,6 +22,8 @@ final class Template: Sortable {
     var colorHex: String = Palette.defaultColor.hex
     var createdAt: Date = Date()
     var sortIndex: Int = 0
+    /// Tempo proposto agli esercizi con il timer.
+    var timerSeconds: Int = Exercise.defaultTimerSeconds
 
     /// Relazioni non ordinate come le salva SwiftData: per l'ordine dell'utente usare
     /// `categories` e `fields`.
@@ -59,6 +61,7 @@ final class Template: Sortable {
             colorHex: colorHex,
             sortIndex: sortIndex
         )
+        copy.timerSeconds = timerSeconds
         copy.categoriesStorage = categories.map { $0.copy() }
         copy.fieldsStorage = fields.map { $0.copy() }
         return copy

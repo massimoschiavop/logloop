@@ -7,7 +7,7 @@ struct SheetListView: View {
     @Query(sort: Sheet.userOrder) private var manualSheets: [Sheet]
     @AppStorage(SheetSortOrder.storageKey) private var sortOrder: SheetSortOrder = .manual
     @AppStorage(SheetSortOrder.ascendingStorageKey) private var isAscending = true
-    @State private var isCreating = false
+    @State private var path: [SheetRoute] = []
 
     private var sheets: [Sheet] {
         switch sortOrder {
@@ -22,7 +22,7 @@ struct SheetListView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if sheets.isEmpty {
                     ContentUnavailableView(
@@ -33,9 +33,7 @@ struct SheetListView: View {
                 } else {
                     List {
                         ForEach(sheets) { sheet in
-                            NavigationLink {
-                                SheetEditorView(sheet: sheet)
-                            } label: {
+                            NavigationLink(value: SheetRoute.detail(sheet)) {
                                 SheetRow(sheet: sheet)
                             }
                             .swipeActions {
@@ -63,11 +61,25 @@ struct SheetListView: View {
                     sortMenu
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Nuova scheda", systemImage: "plus") { isCreating = true }
+                    Button("Nuova scheda", systemImage: "plus") { path.append(.new) }
                 }
             }
-            .navigationDestination(isPresented: $isCreating) {
-                SheetEditorView()
+            .navigationDestination(for: SheetRoute.self) { route in
+                switch route {
+                case .new:
+                    // Creata la scheda, l'editor lascia il posto ai suoi esercizi.
+                    SheetEditorView { sheet in path = [.detail(sheet)] }
+                case .edit(let sheet):
+                    SheetEditorView(sheet: sheet)
+                case .detail(let sheet):
+                    SheetDetailView(sheet: sheet)
+                case .newExercise(let sheet, let day):
+                    ExerciseEditorView(sheet: sheet, day: day)
+                case .editExercise(let exercise):
+                    if let sheet = exercise.sheet {
+                        ExerciseEditorView(sheet: sheet, exercise: exercise)
+                    }
+                }
             }
         }
     }
@@ -102,6 +114,15 @@ struct SheetListView: View {
         list.move(fromOffsets: source, toOffset: destination)
         list.renumber()
     }
+}
+
+/// Le schermate raggiungibili dalla lista delle schede.
+enum SheetRoute: Hashable {
+    case new
+    case edit(Sheet)
+    case detail(Sheet)
+    case newExercise(Sheet, Weekday?)
+    case editExercise(Exercise)
 }
 
 private struct SheetRow: View {
