@@ -96,8 +96,10 @@ extension Template {
         return field
     }
 
+    /// Elimina la categoria e, con lei, i suoi esercizi in tutte le schede del modello.
     func removeCategory(_ category: TemplateCategory) {
         let remaining = categories.filter { $0.identifier != category.identifier }
+        category.exercises.forEach { modelContext?.delete($0) }
         modelContext?.delete(category)
         remaining.renumber()
     }

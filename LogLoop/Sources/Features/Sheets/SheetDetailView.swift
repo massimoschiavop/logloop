@@ -11,6 +11,10 @@ struct SheetDetailView: View {
     @State private var selectedDay = Weekday.today
     /// Lega il vetro delle pastiglie scelte, che scivola da una all'altra.
     @Namespace private var chipGlass
+    /// La sezione in cui si sta scrivendo un esercizio nuovo, e il suo nome.
+    @State private var adding: AddTarget?
+    @State private var newName = ""
+    @FocusState private var isNewNameFocused: Bool
 
     /// I giorni della scheda nell'ordine della settimana.
     private var days: [Weekday] {
@@ -70,72 +74,142 @@ struct SheetDetailView: View {
                     Label("Modifica scheda", systemImage: "pencil")
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink(value: SheetRoute.newExercise(sheet, currentDay)) {
-                    Label("Nuovo esercizio", systemImage: "plus")
-                }
-            }
         }
     }
 
-    /// Gli esercizi raggruppati per categoria, nell'ordine delle categorie del modello; in
-    /// fondo quelli senza categoria (o con una di un altro modello).
-    private func groups(of exercises: [Exercise]) -> [(category: TemplateCategory?, exercises: [Exercise])] {
+    /// Una sezione per ogni categoria del modello, anche vuota per potervi aggiungere; in
+    /// cima gli esercizi senza categoria (o con una di un altro modello, o eliminata).
+    private func groups(of exercises: [Exercise]) -> [ExerciseGroup] {
         let categories = sheet.template?.categories ?? []
         let ids = Set(categories.map(\.identifier))
-        var result: [(TemplateCategory?, [Exercise])] = categories.compactMap { category in
-            let items = exercises.filter { $0.category?.identifier == category.identifier }
-            return items.isEmpty ? nil : (category, items)
+        var result = categories.map { category in
+            ExerciseGroup(
+                category: category,
+                exercises: exercises.filter { $0.category?.identifier == category.identifier }
+            )
         }
         let others = exercises.filter { $0.category.map { !ids.contains($0.identifier) } ?? true }
-        if !others.isEmpty { result.append((nil, others)) }
+        if !others.isEmpty || categories.isEmpty {
+            result.insert(ExerciseGroup(category: nil, exercises: others), at: 0)
+        }
         return result
     }
 
-    @ViewBuilder
-    private func pageContent(for day: Weekday?) -> some View {
-        let exercises = sheet.exercises(on: day)
-        if exercises.isEmpty {
-            ContentUnavailableView(
-                "Nessun esercizio",
-                systemImage: "list.bullet.rectangle",
-                description: Text(emptyDescription(for: day))
-            )
-        } else {
-            let groups = groups(of: exercises)
-            List {
-                ForEach(groups, id: \.category?.identifier) { group in
-                    Section {
-                        ForEach(group.exercises) { exercise in
-                            NavigationLink(value: SheetRoute.editExercise(exercise)) {
-                                ExerciseRow(exercise: exercise, fields: sheet.template?.fields ?? [])
-                            }
-                            .swipeToDelete { delete(exercise) }
-                        }
-                    } header: {
-                        if let category = group.category {
-                            Label {
-                                Text(category.name)
-                            } icon: {
-                                Image(systemName: "circle.fill")
-                                    .foregroundStyle(Color(hex: category.colorHex))
-                            }
-                        } else if groups.count > 1 {
-                            Text("Senza categoria")
-                        }
-                    }
-                }
+    /// Le righe di una pagina in fila: titolo di ogni categoria, i suoi esercizi e la riga per
+    /// aggiungerne. Stanno in un'unica lista perché il trascinamento passi da una all'altra.
+    private func rows(for day: Weekday?) -> [PageRow] {
+        let groups = groups(of: sheet.exercises(on: day))
+        return groups.flatMap { group -> [PageRow] in
+            let category = group.category?.identifier
+            let target = AddTarget(day: day, category: category)
+            // Senza categorie nel modello c'è una sola sezione, ma il titolo serve per il +.
+            var rows: [PageRow] = if let title = group.category {
+                [.title(target, title.name, Color(hex: title.colorHex))]
+            } else {
+                [.title(target, groups.count > 1 ? "Senza categoria" : "Esercizi", nil)]
             }
+            rows += group.exercises.map { .exercise($0, category) }
+            if adding == target {
+                rows.append(.newName(target))
+            } else if group.exercises.isEmpty {
+                rows.append(.empty(target))
+            }
+            return rows
         }
     }
 
-    /// Gli esercizi valgono per giorno, uguali in tutte le settimane.
-    private func emptyDescription(for day: Weekday?) -> String {
-        let hint = "Tocca + per aggiungere un esercizio"
-        if sheet.showsDays, let day {
-            return "\(hint) al \(day.name.lowercased())."
+    private func pageContent(for day: Weekday?) -> some View {
+        let rows = rows(for: day)
+        return List {
+            // Nessuna riga ha moveDisabled: la lista rifiuta di lasciare un esercizio accanto a
+            // una riga bloccata, per esempio subito sotto un titolo. Si spostano però solo gli
+            // esercizi: il resto, se trascinato, torna al suo posto.
+            ForEach(rows) { row in
+                switch row {
+                case .title(let target, let title, let color):
+                    CategoryTitleRow(title: title, color: color) {
+                        commitNewExercise()
+                        newName = ""
+                        adding = target
+                        isNewNameFocused = true
+                    }
+                case .exercise(let exercise, _):
+                    NavigationLink(value: SheetRoute.editExercise(exercise)) {
+                        ExerciseRow(exercise: exercise, fields: sheet.template?.fields ?? [])
+                    }
+                    .swipeToDelete { delete(exercise) }
+                case .empty:
+                    Text("Nessun esercizio")
+                        .foregroundStyle(.secondary)
+                case .newName:
+                    TextField("Nome dell'esercizio", text: $newName)
+                        .focused($isNewNameFocused)
+                        .submitLabel(.done)
+                        .onSubmit(commitNewExercise)
+                        .onAppear { isNewNameFocused = true }
+                        .onChange(of: isNewNameFocused) {
+                            if !isNewNameFocused { commitNewExercise() }
+                        }
+                }
+            }
+            .onMove { source, destination in
+                move(in: rows, from: source, to: destination)
+            }
         }
-        return "\(hint)."
+        .background(RowSwipePriority())
+    }
+
+    /// Un esercizio trascinato prende la categoria della riga sopra il punto in cui è lasciato:
+    /// sotto un titolo va in cima alla categoria, sotto un esercizio subito dopo di lui, sotto
+    /// la riga del nome nuovo in fondo alla categoria di quella riga.
+    private func move(in rows: [PageRow], from source: IndexSet, to destination: Int) {
+        guard let from = source.first, case .exercise(let moved, _) = rows[from] else { return }
+        let others = rows.enumerated().filter { $0.offset != from }
+        let above = others.last { $0.offset < destination }?.element
+        let category = above?.category ?? rows.first?.category
+        // Gli esercizi della categoria di arrivo, senza quello trascinato.
+        let siblings = others.compactMap { item -> Exercise? in
+            guard case .exercise(let exercise, let group) = item.element, group == category else { return nil }
+            return exercise
+        }
+        let next: Exercise?
+        switch above {
+        case .exercise(let exercise, _):
+            let index = siblings.firstIndex { $0.identifier == exercise.identifier }
+            next = index.flatMap { siblings.indices.contains($0 + 1) ? siblings[$0 + 1] : nil }
+        case .title, nil:
+            next = siblings.first
+        case .newName, .empty:
+            next = nil
+        }
+        // Dopo il rilascio: cambiare la categoria mentre la lista chiude il suo spostamento
+        // altera le righe che si aspetta e la fa andare in crash.
+        let id = moved.identifier
+        let before = next?.identifier
+        let after = siblings.last?.identifier
+        DispatchQueue.main.async {
+            moveExercise(id, toCategory: category, before: before, after: after)
+        }
+    }
+
+    /// Crea l'esercizio scritto nella riga nuova, se ha un nome, e chiude la riga.
+    private func commitNewExercise() {
+        guard let target = adding else { return }
+        let name = newName.trimmed
+        adding = nil
+        newName = ""
+        guard !name.isEmpty else { return }
+        // Come nell'editor: in fondo, col timer del modello; senza giorni vale per tutti.
+        let exercise = Exercise(
+            name: name,
+            weekday: sheet.showsDays ? target.day : nil,
+            sortIndex: sheet.exercisesStorage.count
+        )
+        exercise.timerSeconds = sheet.template?.timerSeconds ?? Exercise.defaultTimerSeconds
+        exercise.category = sheet.template?.categories.first { $0.identifier == target.category }
+        exercise.sheet = sheet
+        context.insert(exercise)
+        try? context.save()
     }
 
     /// Passa a un'altra settimana o giorno facendo scorrere le pagine.
@@ -144,6 +218,23 @@ struct SheetDetailView: View {
             if let week { selectedWeek = week }
             if let day { selectedDay = day }
         }
+    }
+
+    /// Sposta un esercizio trascinato prima di `next`, o dopo `last` se `next` è nullo, e gli
+    /// dà la categoria della sezione in cui è stato lasciato.
+    private func moveExercise(_ id: UUID, toCategory categoryID: UUID?, before next: UUID?, after last: UUID?) {
+        var all = sheet.exercisesStorage.sortedByIndex()
+        guard id != next, let from = all.firstIndex(where: { $0.identifier == id }) else { return }
+        let exercise = all.remove(at: from)
+        exercise.category = categoryID.flatMap { id in
+            sheet.template?.categories.first { $0.identifier == id }
+        }
+        // Prima dell'esercizio su cui è stato lasciato, o dopo l'ultimo della sezione.
+        let position = next.flatMap { id in all.firstIndex { $0.identifier == id } }
+            ?? last.flatMap { id in all.firstIndex { $0.identifier == id }.map { $0 + 1 } }
+            ?? all.endIndex
+        all.insert(exercise, at: position)
+        withAnimation { all.renumber() }
     }
 
     private func delete(_ exercise: Exercise) {
@@ -217,6 +308,80 @@ struct SheetDetailView: View {
     }
 }
 
+/// Gli esercizi di una categoria, o senza categoria se `category` è nulla.
+private struct ExerciseGroup: Identifiable {
+    let category: TemplateCategory?
+    let exercises: [Exercise]
+
+    var id: UUID? { category?.identifier }
+}
+
+/// Dove va l'esercizio che si sta scrivendo: giorno della pagina e categoria della sezione.
+private struct AddTarget: Hashable {
+    let day: Weekday?
+    let category: UUID?
+}
+
+/// Una riga della lista di una pagina, con la categoria a cui appartiene.
+private enum PageRow: Identifiable {
+    case title(AddTarget, String, Color?)
+    case exercise(Exercise, UUID?)
+    case newName(AddTarget)
+    /// Il segnaposto di una categoria vuota, che mostra dove lasciare un esercizio trascinato.
+    case empty(AddTarget)
+
+    var id: String {
+        switch self {
+        case .title(let target, _, _): "title-\(target.category?.uuidString ?? "none")"
+        case .exercise(let exercise, _): exercise.identifier.uuidString
+        case .empty(let target): "empty-\(target.category?.uuidString ?? "none")"
+        case .newName(let target): "new-\(target.category?.uuidString ?? "none")"
+        }
+    }
+
+    var category: UUID? {
+        switch self {
+        case .exercise(_, let category): category
+        case .title(let target, _, _), .newName(let target), .empty(let target): target.category
+        }
+    }
+}
+
+/// La prima riga di una sezione, col nome della categoria al centro e il + per aggiungervi
+/// un esercizio.
+private struct CategoryTitleRow: View {
+    let title: String
+    let color: Color?
+    let onAdd: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if let color {
+                Image(systemName: "circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(color)
+            }
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(color == nil ? .secondary : .primary)
+        }
+        .frame(maxWidth: .infinity)
+        // Il + in fondo alla riga, senza spostare il titolo dal centro.
+        .overlay(alignment: .trailing) {
+            Button("Aggiungi esercizio", systemImage: "plus", action: onAdd)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .font(.headline)
+        }
+        // Lo sfondo appena più chiaro basta a staccarla dagli esercizi, senza la riga sotto.
+        .listRowSeparator(.hidden)
+        .listRowBackground(
+            Color(.secondarySystemGroupedBackground)
+                .overlay(Color(.tertiarySystemFill))
+        )
+    }
+}
+
 /// Una pagina degli esercizi: una settimana e, se la scheda li prevede, un giorno.
 private struct Page: Hashable, Identifiable {
     let week: Int
@@ -265,6 +430,55 @@ private struct HeaderBar<Header: View>: ViewModifier {
             content.safeAreaInset(edge: .top, spacing: 0) {
                 if isVisible { header().background(.bar) }
             }
+        }
+    }
+}
+
+/// Sulle righe degli esercizi lo swipe verso sinistra deve mostrare "Elimina" invece di
+/// cambiare pagina: lo scorrimento delle pagine aspetta che lo swipe della riga rinunci.
+/// Fuori dalle righe, o verso destra, lo swipe della riga non parte e le pagine scorrono.
+private struct RowSwipePriority: UIViewRepresentable {
+    func makeUIView(context: Context) -> HookView { HookView() }
+    func updateUIView(_ view: HookView, context: Context) { view.connect() }
+
+    final class HookView: UIView {
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            connect()
+        }
+
+        func connect() {
+            // A vista montata, così la lista della pagina esiste già.
+            DispatchQueue.main.async { [weak self] in
+                guard let self, window != nil, let pager = pagingScrollView() else { return }
+                for list in pager.descendants(of: UICollectionView.self) {
+                    for recognizer in list.gestureRecognizers ?? []
+                    where String(describing: type(of: recognizer)).contains("SwipeAction") {
+                        pager.panGestureRecognizer.require(toFail: recognizer)
+                    }
+                }
+            }
+        }
+
+        /// Lo scorrimento orizzontale delle pagine che contiene questa vista.
+        private func pagingScrollView() -> UIScrollView? {
+            var view = superview
+            while let current = view {
+                if let scrollView = current as? UIScrollView, !(scrollView is UICollectionView),
+                   scrollView.contentSize.width > scrollView.bounds.width {
+                    return scrollView
+                }
+                view = current.superview
+            }
+            return nil
+        }
+    }
+}
+
+private extension UIView {
+    func descendants<T: UIView>(of type: T.Type) -> [T] {
+        subviews.flatMap { subview in
+            (subview as? T).map { [$0] } ?? subview.descendants(of: type)
         }
     }
 }
@@ -370,11 +584,13 @@ private struct ExerciseRow: View {
             }
             Spacer()
             if exercise.hasTimer {
-                Label(exercise.timerSeconds.formattedDuration, systemImage: "timer")
+                Text(exercise.timerSeconds.formattedDuration)
                     .font(.subheadline)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
         }
+        // La riga sotto parte dal nome, non dal tempo del timer.
+        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
     }
 }

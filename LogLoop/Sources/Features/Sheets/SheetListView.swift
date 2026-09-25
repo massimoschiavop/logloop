@@ -73,8 +73,6 @@ struct SheetListView: View {
                     SheetEditorView(sheet: sheet)
                 case .detail(let sheet):
                     SheetDetailView(sheet: sheet)
-                case .newExercise(let sheet, let day):
-                    ExerciseEditorView(sheet: sheet, day: day)
                 case .editExercise(let exercise):
                     if let sheet = exercise.sheet {
                         ExerciseEditorView(sheet: sheet, exercise: exercise)
@@ -121,7 +119,6 @@ enum SheetRoute: Hashable {
     case new
     case edit(Sheet)
     case detail(Sheet)
-    case newExercise(Sheet, Weekday?)
     case editExercise(Exercise)
 }
 
