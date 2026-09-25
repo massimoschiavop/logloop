@@ -2,6 +2,7 @@ import SwiftData
 
 extension ModelContext {
     /// Dà un nome alle modifiche appena fatte, mostrato scuotendo il telefono: "Annulla <nome>".
+    /// Il nome va con le iniziali maiuscole, es. "Modifica Attività".
     func nameUndo(_ name: String) {
         undoManager?.setActionName(name)
     }
@@ -13,7 +14,7 @@ enum Persistence {
         TemplateCategory.self,
         FieldDefinition.self,
         Sheet.self,
-        Exercise.self
+        Activity.self
     ]
 
     static let schema = Schema(modelTypes)

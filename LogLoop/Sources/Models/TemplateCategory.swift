@@ -10,9 +10,10 @@ final class TemplateCategory: Sortable {
     var sortIndex: Int = 0
     var template: Template?
 
-    /// Le attività di questa categoria, nelle schede del modello: spariscono con lei.
-    @Relationship(deleteRule: .cascade, inverse: \Exercise.category)
-    var exercises: [Exercise] = []
+    /// Le attività di questa categoria, nelle schede del modello: eliminandola restano, senza
+    /// categoria.
+    @Relationship(deleteRule: .nullify, inverse: \Activity.category)
+    var activities: [Activity] = []
 
     init(name: String, colorHex: String = Palette.defaultColor.hex, sortIndex: Int = 0) {
         self.identifier = UUID()

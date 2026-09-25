@@ -19,6 +19,19 @@ struct DeleteButton: View {
     }
 }
 
+/// Pulsante Duplica per lo swipe delle liste, con la sola icona, accanto a `DeleteButton`.
+struct DuplicateButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label("Duplica", systemImage: "plus.square.on.square")
+        }
+        .labelStyle(.iconOnly)
+        .tint(.blue)
+    }
+}
+
 /// Pulsante di conferma di sistema (il check): da iOS 26 lo fornisce iOS in base al ruolo;
 /// prima si ripiega sul simbolo checkmark.
 struct ConfirmButton: View {
@@ -39,6 +52,21 @@ struct ConfirmButton: View {
 }
 
 extension View {
+    /// La x grigia in fondo al campo di testo, per svuotarlo con un tocco come nei campi di
+    /// sistema; compare solo quando il campo non è vuoto.
+    func clearButton(text: Binding<String>) -> some View {
+        HStack {
+            self
+            if !text.wrappedValue.isEmpty {
+                Button("Svuota", systemImage: "xmark.circle.fill") { text.wrappedValue = "" }
+                    .labelStyle(.iconOnly)
+                    // Senza bordi, così nel Form il tocco resta sul pulsante e non sulla riga.
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(Color(.tertiaryLabel))
+            }
+        }
+    }
+
     /// Eliminazione con lo swipe tramite il pulsante Elimina di sistema.
     func swipeToDelete(perform action: @escaping () -> Void) -> some View {
         // Lo swipe completo non elimina: il cestino va toccato.

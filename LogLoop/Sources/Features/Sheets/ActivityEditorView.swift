@@ -1,12 +1,11 @@
 import SwiftData
 import SwiftUI
 
-/// Creazione e modifica di un'attività: le modifiche arrivano al database solo con il check,
-/// tornando indietro vanno perse. Con `exercise` nullo crea un'attività nel giorno `day`.
-struct ExerciseEditorView: View {
+/// Modifica di un'attività: le modifiche arrivano al database solo con il check, tornando
+/// indietro vanno perse. Le attività nuove si creano dalla riga del nome nella scheda.
+struct ActivityEditorView: View {
     let sheet: Sheet
-    let day: Weekday?
-    let exercise: Exercise?
+    let activity: Activity
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
@@ -16,24 +15,17 @@ struct ExerciseEditorView: View {
     @State private var category: TemplateCategory?
     /// I valori dei campi, per `FieldDefinition.identifier`.
     @State private var values: [String: String]
-    @FocusState private var isNameFocused: Bool
 
-    init(sheet: Sheet, day: Weekday? = nil, exercise: Exercise? = nil) {
+    init(sheet: Sheet, activity: Activity) {
         self.sheet = sheet
-        self.day = day
-        self.exercise = exercise
-        let categories = sheet.template?.categories ?? []
-        _name = State(initialValue: exercise?.name ?? "")
-        _hasTimer = State(initialValue: exercise?.hasTimer ?? sheet.template?.timerEnabledByDefault ?? false)
-        _timerSeconds = State(initialValue: exercise?.timerSeconds
-            ?? sheet.template?.timerSeconds ?? Exercise.defaultTimerSeconds)
+        self.activity = activity
+        _name = State(initialValue: activity.name)
+        _hasTimer = State(initialValue: activity.hasTimer)
+        _timerSeconds = State(initialValue: activity.timerSeconds)
         // Una categoria di un altro modello (la scheda ha cambiato modello) non vale più.
-        if let exercise {
-            _category = State(initialValue: categories.first { $0.identifier == exercise.category?.identifier })
-        } else {
-            _category = State(initialValue: categories.first)
-        }
-        _values = State(initialValue: exercise?.fieldValues ?? [:])
+        _category = State(initialValue: sheet.template?.categories
+            .first { $0.identifier == activity.category?.identifier })
+        _values = State(initialValue: activity.fieldValues)
     }
 
     private var categories: [TemplateCategory] { sheet.template?.categories ?? [] }
@@ -43,8 +35,8 @@ struct ExerciseEditorView: View {
         Form {
             Section("Nome") {
                 TextField("Es. Scale maggiori", text: $name)
-                    .focused($isNameFocused)
                     .submitLabel(.done)
+                    .clearButton(text: $name)
             }
 
             if !categories.isEmpty {
@@ -68,12 +60,15 @@ struct ExerciseEditorView: View {
                 }
             }
         }
-        .navigationTitle(exercise == nil ? "Nuova attività" : "Modifica attività")
+        .navigationTitle("Modifica attività")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmToolbarItem(isEnabled: !name.trimmed.isEmpty, action: save)
-        .onAppear {
-            if exercise == nil { isNameFocused = true }
-        }
+        .confirmToolbarItem(isEnabled: canSave, action: save)
+    }
+
+    /// Serve un nome e, se il modello ha delle categorie, una di loro: l'attività rimasta senza
+    /// (la sua categoria è stata eliminata o è di un altro modello) va assegnata prima di salvare.
+    private var canSave: Bool {
+        !name.trimmed.isEmpty && (categories.isEmpty || category != nil)
     }
 
     /// Una riga sola che apre il menu delle categorie, come la scelta del modello nella scheda.
@@ -81,7 +76,6 @@ struct ExerciseEditorView: View {
         LabeledContent("Categoria") {
             Menu {
                 Picker("Categoria", selection: $category) {
-                    Text("Nessuna").tag(TemplateCategory?.none)
                     ForEach(categories) { category in
                         Label {
                             Text(category.name)
@@ -98,7 +92,7 @@ struct ExerciseEditorView: View {
                             .foregroundStyle(Color(hex: category.colorHex))
                         Text(category.name)
                     } else {
-                        Text("Nessuna")
+                        Text("Scegli")
                     }
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.caption)
@@ -145,29 +139,16 @@ struct ExerciseEditorView: View {
     }
 
     private func save() {
-        let target: Exercise
-        if let exercise {
-            target = exercise
-            target.name = name.trimmed
-        } else {
-            // Le nuove attività vanno in fondo; senza giorni valgono per tutti.
-            target = Exercise(
-                name: name.trimmed,
-                weekday: sheet.showsDays ? day : nil,
-                sortIndex: sheet.exercisesStorage.count
-            )
-            target.sheet = sheet
-            context.insert(target)
-        }
-        target.hasTimer = hasTimer
-        target.timerSeconds = timerSeconds
-        target.category = category
+        activity.name = name.trimmed
+        activity.hasTimer = hasTimer
+        activity.timerSeconds = timerSeconds
+        activity.category = category
         // Solo i campi del modello attuale, senza valori vuoti.
         let fieldKeys = Set(fields.map(\.identifier.uuidString))
-        target.fieldValues = values
+        activity.fieldValues = values
             .mapValues(\.trimmed)
             .filter { fieldKeys.contains($0.key) && !$0.value.isEmpty }
-        context.nameUndo(exercise == nil ? "aggiunta attività" : "modifica attività")
+        context.nameUndo("Modifica Attività")
         try? context.save()
         dismiss()
     }

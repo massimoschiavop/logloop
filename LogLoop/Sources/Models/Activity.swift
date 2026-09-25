@@ -4,13 +4,13 @@ import SwiftData
 /// Attività di una scheda, in una settimana e un giorno. Senza giorno (scheda senza giorni)
 /// vale per tutti i giorni; senza settimana (scheda senza settimane) sta nella prima.
 @Model
-final class Exercise: Sortable {
+final class Activity: Sortable {
     static let defaultTimerSeconds = 60
 
     var identifier: UUID = UUID()
     var name: String = ""
     var hasTimer: Bool = false
-    var timerSeconds: Int = Exercise.defaultTimerSeconds
+    var timerSeconds: Int = Activity.defaultTimerSeconds
     /// `Weekday.rawValue` del giorno, nullo se vale per tutti i giorni.
     var weekdayRaw: Int?
     /// La settimana, da 1; nulla se creato quando la scheda non aveva le settimane.
@@ -39,8 +39,8 @@ final class Exercise: Sortable {
     }
 
     /// Una copia scollegata dalla scheda, con un nuovo identificativo.
-    func copy() -> Exercise {
-        let copy = Exercise(name: name, week: week, weekday: weekday, sortIndex: sortIndex)
+    func copy() -> Activity {
+        let copy = Activity(name: name, week: week, weekday: weekday, sortIndex: sortIndex)
         copy.hasTimer = hasTimer
         copy.timerSeconds = timerSeconds
         copy.fieldValues = fieldValues

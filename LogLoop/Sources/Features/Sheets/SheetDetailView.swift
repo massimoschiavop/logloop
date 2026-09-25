@@ -37,7 +37,7 @@ struct SheetDetailView: View {
     /// Cambiandola la lista si ricostruisce, rimettendo a posto una riga non spostabile.
     @State private var listRevision = 0
     /// L'attività aperta nell'editor, in un foglio dal basso.
-    @State private var editingExercise: Exercise?
+    @State private var editingActivity: Activity?
 
     init(sheet: Sheet) {
         self.sheet = sheet
@@ -165,9 +165,9 @@ struct SheetDetailView: View {
         }
         .background(ContentPopGestureDisabler())
         .modifier(HeaderBar(isVisible: sheet.showsWeeks || sheet.showsDays) { header })
-        .sheet(item: $editingExercise) { exercise in
+        .sheet(item: $editingActivity) { activity in
             NavigationStack {
-                ExerciseEditorView(sheet: sheet, exercise: exercise)
+                ActivityEditorView(sheet: sheet, activity: activity)
             }
         }
         .navigationTitle(sheet.title)
@@ -194,40 +194,46 @@ struct SheetDetailView: View {
 
     /// Una sezione per ogni categoria del modello, anche vuota per potervi aggiungere; in
     /// cima le attività senza categoria (o con una di un altro modello, o eliminata).
-    private func groups(of exercises: [Exercise]) -> [ExerciseGroup] {
+    private func groups(of activities: [Activity]) -> [ActivityGroup] {
         let categories = sheet.template?.categories ?? []
         let ids = Set(categories.map(\.identifier))
         var result = categories.map { category in
-            ExerciseGroup(
+            ActivityGroup(
                 category: category,
-                exercises: exercises.filter { $0.category?.identifier == category.identifier }
+                activities: activities.filter { $0.category?.identifier == category.identifier }
             )
         }
-        let others = exercises.filter { $0.category.map { !ids.contains($0.identifier) } ?? true }
+        let others = activities.filter { $0.category.map { !ids.contains($0.identifier) } ?? true }
         if !others.isEmpty || categories.isEmpty {
-            result.insert(ExerciseGroup(category: nil, exercises: others), at: 0)
+            result.insert(ActivityGroup(category: nil, activities: others), at: 0)
         }
         return result
+    }
+
+    /// Con delle categorie nel modello ogni attività deve averne una: "Senza categoria" raccoglie
+    /// solo quelle rimaste senza, perché la loro categoria è stata eliminata o è di un altro modello.
+    private var requiresCategory: Bool {
+        !(sheet.template?.categoriesStorage.isEmpty ?? true)
     }
 
     /// Le righe di una pagina in fila: titolo di ogni categoria, le sue attività e la riga per
     /// aggiungerne. Stanno in un'unica lista perché il trascinamento passi da una all'altra.
     private func rows(for page: Page) -> [PageRow] {
-        let groups = groups(of: sheet.exercises(week: page.week, day: page.day))
+        let groups = groups(of: sheet.activities(week: page.week, day: page.day))
         return groups.flatMap { group -> [PageRow] in
             let category = group.category?.identifier
             let target = AddTarget(page: page, category: category)
             // Senza categorie nel modello c'è una sola sezione, ma il titolo serve per il +.
             var rows: [PageRow] = if let title = group.category {
-                [.title(target, title.name, Color(hex: title.colorHex), group.exercises.count)]
+                [.title(target, title.name, Color(hex: title.colorHex), group.activities.count)]
             } else {
-                [.title(target, groups.count > 1 ? "Senza categoria" : "Attività", nil, group.exercises.count)]
+                [.title(target, groups.count > 1 ? "Senza categoria" : "Attività", nil, group.activities.count)]
             }
             if !collapsed.contains(category) {
-                rows += group.exercises.map { .exercise($0, category) }
+                rows += group.activities.map { .activity($0, category) }
                 if adding == target {
                     rows.append(.newName(target))
-                } else if group.exercises.isEmpty {
+                } else if group.activities.isEmpty {
                     rows.append(.empty(target))
                 }
             }
@@ -259,6 +265,7 @@ struct SheetDetailView: View {
                             color: color,
                             count: count,
                             isCollapsed: collapsed.contains(target.category),
+                            canAdd: target.category != nil || !requiresCategory,
                             separators: titleSeparators(for: row, in: rows)
                         ) {
                             withAnimation {
@@ -267,7 +274,7 @@ struct SheetDetailView: View {
                                 }
                             }
                         } onAdd: {
-                            commitNewExercise()
+                            commitNewActivity()
                             newName = ""
                             // Si scrive nella categoria, quindi la riapre se era compressa.
                             withAnimation { _ = collapsed.remove(target.category) }
@@ -275,16 +282,20 @@ struct SheetDetailView: View {
                             isNewNameFocused = true
                         }
                         .moveDisabled(!isReordering)
-                    case .exercise(let exercise, _):
+                    case .activity(let activity, _):
                         Button {
-                            commitNewExercise()
-                            editingExercise = exercise
+                            commitNewActivity()
+                            editingActivity = activity
                         } label: {
-                            ExerciseRow(exercise: exercise, fields: sheet.template?.fields ?? [])
+                            ActivityRow(activity: activity, fields: sheet.template?.fields ?? [])
                                 .contentShape(Rectangle())
                         }
                         .foregroundStyle(.primary)
-                        .swipeToDelete { delete(exercise) }
+                        // Come `swipeToDelete`: lo swipe completo non elimina.
+                        .swipeActions(allowsFullSwipe: false) {
+                            DeleteButton { delete(activity) }
+                            DuplicateButton { duplicate(activity) }
+                        }
                         // Chiesto quando l'attività viene sollevata: sblocca le altre righe.
                         .itemProvider {
                             DispatchQueue.main.async { isReordering = true }
@@ -298,10 +309,10 @@ struct SheetDetailView: View {
                         TextField("Nome dell'attività", text: $newName)
                             .focused($isNewNameFocused)
                             .submitLabel(.done)
-                            .onSubmit(commitNewExercise)
+                            .onSubmit(commitNewActivity)
                             .onAppear { isNewNameFocused = true }
                             .onChange(of: isNewNameFocused) {
-                                if !isNewNameFocused { commitNewExercise() }
+                                if !isNewNameFocused { commitNewActivity() }
                             }
                             .moveDisabled(!isReordering)
                     }
@@ -325,10 +336,11 @@ struct SheetDetailView: View {
 
     /// Un'attività trascinata prende la categoria della riga sopra il punto in cui è lasciata:
     /// sotto un titolo va in cima alla categoria, sotto un'attività subito dopo di lei, sotto
-    /// la riga del nome nuovo in fondo alla categoria di quella riga.
+    /// la riga del nome nuovo in fondo alla categoria di quella riga. Un'attività con categoria
+    /// non si lascia in "Senza categoria": torna al suo posto.
     private func move(in rows: [PageRow], from source: IndexSet, to destination: Int) {
         isReordering = false
-        guard let from = source.first, case .exercise(let moved, _) = rows[from] else {
+        guard let from = source.first, case .activity(let moved, let origin) = rows[from] else {
             // Una riga sbloccata sollevata per sbaglio (dopo un trascinamento annullato):
             // la lista la mostrerebbe spostata, quindi la si ricostruisce.
             DispatchQueue.main.async { listRevision += 1 }
@@ -337,15 +349,19 @@ struct SheetDetailView: View {
         let others = rows.enumerated().filter { $0.offset != from }
         let above = others.last { $0.offset < destination }?.element
         let category = above?.category ?? rows.first?.category
-        // Le attività della categoria di arrivo, senza quella trascinata.
-        let siblings = others.compactMap { item -> Exercise? in
-            guard case .exercise(let exercise, let group) = item.element, group == category else { return nil }
-            return exercise
+        guard category != nil || origin == nil || !requiresCategory else {
+            DispatchQueue.main.async { listRevision += 1 }
+            return
         }
-        let next: Exercise?
+        // Le attività della categoria di arrivo, senza quella trascinata.
+        let siblings = others.compactMap { item -> Activity? in
+            guard case .activity(let activity, let group) = item.element, group == category else { return nil }
+            return activity
+        }
+        let next: Activity?
         switch above {
-        case .exercise(let exercise, _):
-            let index = siblings.firstIndex { $0.identifier == exercise.identifier }
+        case .activity(let activity, _):
+            let index = siblings.firstIndex { $0.identifier == activity.identifier }
             next = index.flatMap { siblings.indices.contains($0 + 1) ? siblings[$0 + 1] : nil }
         case .title, nil:
             next = siblings.first
@@ -358,30 +374,30 @@ struct SheetDetailView: View {
         let before = next?.identifier
         let after = siblings.last?.identifier
         DispatchQueue.main.async {
-            moveExercise(id, toCategory: category, before: before, after: after)
+            moveActivity(id, toCategory: category, before: before, after: after)
         }
     }
 
     /// Crea l'attività scritta nella riga nuova, se ha un nome, e chiude la riga.
-    private func commitNewExercise() {
+    private func commitNewActivity() {
         guard let target = adding else { return }
         let name = newName.trimmed
         adding = nil
         newName = ""
         guard !name.isEmpty else { return }
         // Come nell'editor: in fondo, col timer del modello; senza giorni vale per tutti.
-        let exercise = Exercise(
+        let activity = Activity(
             name: name,
             week: sheet.showsWeeks ? target.page.week : nil,
             weekday: sheet.showsDays ? target.page.day : nil,
-            sortIndex: sheet.exercisesStorage.count
+            sortIndex: sheet.activitiesStorage.count
         )
-        exercise.hasTimer = sheet.template?.timerEnabledByDefault ?? false
-        exercise.timerSeconds = sheet.template?.timerSeconds ?? Exercise.defaultTimerSeconds
-        exercise.category = sheet.template?.categories.first { $0.identifier == target.category }
-        exercise.sheet = sheet
-        context.insert(exercise)
-        context.nameUndo("aggiunta attività")
+        activity.hasTimer = sheet.template?.timerEnabledByDefault ?? false
+        activity.timerSeconds = sheet.template?.timerSeconds ?? Activity.defaultTimerSeconds
+        activity.category = sheet.template?.categories.first { $0.identifier == target.category }
+        activity.sheet = sheet
+        context.insert(activity)
+        context.nameUndo("Aggiunta Attività")
         try? context.save()
     }
 
@@ -408,7 +424,7 @@ struct SheetDetailView: View {
             // Resta sulla pagina mostrata, anche riattivando quella scelta prima.
             selectedWeek = currentWeek
         }
-        context.nameUndo(sheet.disabledWeeks.contains(week) ? "disattivazione settimana" : "riattivazione settimana")
+        context.nameUndo(sheet.disabledWeeks.contains(week) ? "Disattivazione Settimana" : "Riattivazione Settimana")
         weekBeforeTap = nil
     }
 
@@ -422,34 +438,49 @@ struct SheetDetailView: View {
             if !isDisabled, let dayBeforeTap, enabledDays.contains(dayBeforeTap) { selectedDay = dayBeforeTap }
             if let currentDay { selectedDay = currentDay }
         }
-        context.nameUndo(isDisabled ? "riattivazione giorno" : "disattivazione giorno")
+        context.nameUndo(isDisabled ? "Riattivazione Giorno" : "Disattivazione Giorno")
         dayBeforeTap = nil
     }
 
     /// Sposta un'attività trascinata prima di `next`, o dopo `last` se `next` è nullo, e le
     /// dà la categoria della sezione in cui è stata lasciata.
-    private func moveExercise(_ id: UUID, toCategory categoryID: UUID?, before next: UUID?, after last: UUID?) {
-        var all = sheet.exercisesStorage.sortedByIndex()
+    private func moveActivity(_ id: UUID, toCategory categoryID: UUID?, before next: UUID?, after last: UUID?) {
+        var all = sheet.activitiesStorage.sortedByIndex()
         guard id != next, let from = all.firstIndex(where: { $0.identifier == id }) else { return }
-        let exercise = all.remove(at: from)
-        exercise.category = categoryID.flatMap { id in
+        let activity = all.remove(at: from)
+        activity.category = categoryID.flatMap { id in
             sheet.template?.categories.first { $0.identifier == id }
         }
         // Prima dell'attività su cui è stata lasciata, o dopo l'ultimo della sezione.
         let position = next.flatMap { id in all.firstIndex { $0.identifier == id } }
             ?? last.flatMap { id in all.firstIndex { $0.identifier == id }.map { $0 + 1 } }
             ?? all.endIndex
-        all.insert(exercise, at: position)
+        all.insert(activity, at: position)
         withAnimation { all.renumber() }
-        context.nameUndo("spostamento attività")
+        context.nameUndo("Spostamento Attività")
     }
 
-    private func delete(_ exercise: Exercise) {
-        let remaining = sheet.exercisesStorage.sortedByIndex()
-            .filter { $0.identifier != exercise.identifier }
-        context.delete(exercise)
+    /// Una copia dell'attività subito sotto di lei, nella stessa pagina e categoria; il nome è il
+    /// primo "(copia n)" libero tra le attività della sua pagina.
+    private func duplicate(_ activity: Activity) {
+        var all = sheet.activitiesStorage.sortedByIndex()
+        let copy = activity.copy()
+        let pageNames = sheet.activities(week: activity.week ?? 1, day: activity.weekday).map(\.name)
+        copy.name = activity.name.copyName(avoiding: pageNames)
+        copy.sheet = sheet
+        context.insert(copy)
+        let position = all.firstIndex { $0.identifier == activity.identifier }.map { $0 + 1 } ?? all.endIndex
+        all.insert(copy, at: position)
+        withAnimation { all.renumber() }
+        context.nameUndo("Duplicazione Attività")
+    }
+
+    private func delete(_ activity: Activity) {
+        let remaining = sheet.activitiesStorage.sortedByIndex()
+            .filter { $0.identifier != activity.identifier }
+        context.delete(activity)
         remaining.renumber()
-        context.nameUndo("eliminazione attività")
+        context.nameUndo("Eliminazione Attività")
     }
 
     private var header: some View {
@@ -527,9 +558,9 @@ struct SheetDetailView: View {
 }
 
 /// Le attività di una categoria, o senza categoria se `category` è nulla.
-private struct ExerciseGroup: Identifiable {
+private struct ActivityGroup: Identifiable {
     let category: TemplateCategory?
-    let exercises: [Exercise]
+    let activities: [Activity]
 
     var id: UUID? { category?.identifier }
 }
@@ -544,7 +575,7 @@ private struct AddTarget: Hashable {
 /// Una riga della lista di una pagina, con la categoria a cui appartiene.
 private enum PageRow: Identifiable {
     case title(AddTarget, String, Color?, Int)
-    case exercise(Exercise, UUID?)
+    case activity(Activity, UUID?)
     case newName(AddTarget)
     /// Il segnaposto di una categoria vuota.
     case empty(AddTarget)
@@ -552,7 +583,7 @@ private enum PageRow: Identifiable {
     var id: String {
         switch self {
         case .title(let target, _, _, _): "title-\(target.category?.uuidString ?? "none")"
-        case .exercise(let exercise, _): exercise.identifier.uuidString
+        case .activity(let activity, _): activity.identifier.uuidString
         case .newName(let target): "new-\(target.category?.uuidString ?? "none")"
         case .empty(let target): "empty-\(target.category?.uuidString ?? "none")"
         }
@@ -560,76 +591,10 @@ private enum PageRow: Identifiable {
 
     var category: UUID? {
         switch self {
-        case .exercise(_, let category): category
+        case .activity(_, let category): category
         case .title(let target, _, _, _), .newName(let target), .empty(let target):
             target.category
         }
-    }
-}
-
-/// La prima riga di una categoria: il nome al centro, la freccia per comprimerla e il + per
-/// aggiungervi un'attività.
-private struct CategoryTitleRow: View {
-    let title: String
-    let color: Color?
-    /// Le attività della categoria, mostrate accanto al titolo quando è compressa.
-    let count: Int
-    let isCollapsed: Bool
-    /// I bordi su cui mostrare la riga divisoria, verso un altro titolo.
-    let separators: Edge.Set
-    let onToggle: () -> Void
-    let onAdd: () -> Void
-
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        HStack(spacing: 8) {
-            if let color {
-                Image(systemName: "circle.fill")
-                    .font(.caption)
-                    .foregroundStyle(color)
-            }
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(color == nil ? .secondary : .primary)
-            if isCollapsed, count > 0 {
-                Text(count, format: .number)
-                    .font(.subheadline)
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        // La freccia a sinistra e il + a destra, senza spostare il titolo dal centro.
-        .overlay(alignment: .leading) {
-            Image(systemName: "chevron.down")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .rotationEffect(.degrees(isCollapsed ? -90 : 0))
-        }
-        .overlay(alignment: .trailing) {
-            Button("Aggiungi attività", systemImage: "plus", action: onAdd)
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .font(.headline)
-        }
-        // Toccando la riga, fuori dal +, la categoria si comprime o si riapre.
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onToggle)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityValue(isCollapsed ? "Compressa" : "Espansa")
-        .accessibilityAction(named: isCollapsed ? "Espandi" : "Comprimi", onToggle)
-        // Lo sfondo diverso basta a staccarla dalle attività, senza la riga sotto. In chiaro
-        // il riempimento di sistema si confonde con lo sfondo della pagina: serve un grigio pieno.
-        .listRowSeparator(separators.contains(.top) ? .visible : .hidden, edges: .top)
-        .listRowSeparator(separators.contains(.bottom) ? .visible : .hidden, edges: .bottom)
-        // La riga parte dalla freccia, non dal titolo centrato.
-        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
-        .listRowBackground(
-            colorScheme == .light
-                ? AnyView(Color(.systemGray5))
-                : AnyView(Color(.secondarySystemGroupedBackground).overlay(Color(.tertiarySystemFill)))
-        )
     }
 }
 
@@ -639,220 +604,4 @@ private struct Page: Hashable, Identifiable {
     let day: Weekday?
 
     var id: Self { self }
-}
-
-/// Da iOS 26 si torna indietro con uno swipe verso destra da qualunque punto dello schermo, e
-/// qui ruberebbe lo swipe tra i giorni: resta attivo solo quello dal bordo sinistro.
-private struct ContentPopGestureDisabler: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> Controller { Controller() }
-    func updateUIViewController(_ controller: Controller, context: Context) {}
-
-    final class Controller: UIViewController {
-        override func viewDidAppear(_ animated: Bool) {
-            super.viewDidAppear(animated)
-            setContentPopEnabled(false)
-        }
-
-        override func viewWillDisappear(_ animated: Bool) {
-            super.viewWillDisappear(animated)
-            setContentPopEnabled(true)
-        }
-
-        private func setContentPopEnabled(_ isEnabled: Bool) {
-            if #available(iOS 26, *) {
-                navigationController?.interactiveContentPopGestureRecognizer?.isEnabled = isEnabled
-            }
-        }
-    }
-}
-
-/// L'intestazione in alto: da iOS 26 le pastiglie di vetro galleggiano sulle attività con la
-/// sfumatura di sistema, prima stanno su una barra traslucida.
-private struct HeaderBar<Header: View>: ViewModifier {
-    let isVisible: Bool
-    @ViewBuilder let header: () -> Header
-
-    func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content.safeAreaBar(edge: .top, spacing: 0) {
-                if isVisible { header() }
-            }
-        } else {
-            content.safeAreaInset(edge: .top, spacing: 0) {
-                if isVisible { header().background(.bar) }
-            }
-        }
-    }
-}
-
-/// Sulle righe delle attività lo swipe verso sinistra deve mostrare "Elimina" invece di
-/// cambiare pagina: lo scorrimento delle pagine aspetta che lo swipe della riga rinunci.
-/// Fuori dalle righe, o verso destra, lo swipe della riga non parte e le pagine scorrono.
-private struct RowSwipePriority: UIViewRepresentable {
-    func makeUIView(context: Context) -> HookView { HookView() }
-    func updateUIView(_ view: HookView, context: Context) { view.connect() }
-
-    final class HookView: UIView {
-        override func didMoveToWindow() {
-            super.didMoveToWindow()
-            connect()
-        }
-
-        func connect() {
-            // A vista montata, così la lista della pagina esiste già.
-            DispatchQueue.main.async { [weak self] in
-                guard let self, window != nil, let pager = pagingScrollView() else { return }
-                for list in pager.descendants(of: UICollectionView.self) {
-                    for recognizer in list.gestureRecognizers ?? []
-                    where String(describing: type(of: recognizer)).contains("SwipeAction") {
-                        pager.panGestureRecognizer.require(toFail: recognizer)
-                    }
-                }
-            }
-        }
-
-        /// Lo scorrimento orizzontale delle pagine che contiene questa vista.
-        private func pagingScrollView() -> UIScrollView? {
-            var view = superview
-            while let current = view {
-                if let scrollView = current as? UIScrollView, !(scrollView is UICollectionView),
-                   scrollView.contentSize.width > scrollView.bounds.width {
-                    return scrollView
-                }
-                view = current.superview
-            }
-            return nil
-        }
-    }
-}
-
-private extension UIView {
-    func descendants<T: UIView>(of type: T.Type) -> [T] {
-        subviews.flatMap { subview in
-            (subview as? T).map { [$0] } ?? subview.descendants(of: type)
-        }
-    }
-}
-
-/// Una fila di pastiglie; col vetro le raggruppa perché si fondano quando cambia la scelta.
-private struct ChipRow<Content: View>: View {
-    @ViewBuilder let content: () -> Content
-
-    var body: some View {
-        if #available(iOS 26, *) {
-            GlassEffectContainer(spacing: 4) {
-                HStack(spacing: 8, content: content)
-            }
-        } else {
-            HStack(spacing: 8, content: content)
-        }
-    }
-}
-
-/// Pastiglia selezionabile dell'intestazione, piena quando è scelta. Col doppio tocco si
-/// disattiva: sbiadita e barrata, non si sceglie più finché non la si riattiva allo stesso modo.
-private struct SelectorChip: View {
-    let title: String
-    let isSelected: Bool
-    let isDisabled: Bool
-    let glassID: ChipGlassID
-    let namespace: Namespace.ID
-    let action: () -> Void
-    let onDoubleTap: () -> Void
-
-    var body: some View {
-        Text(title)
-            .font(.subheadline.weight(.semibold))
-            .strikethrough(isDisabled)
-            .foregroundStyle(isSelected ? Color.white : isDisabled ? Color(.tertiaryLabel) : Color.primary)
-            .frame(minWidth: 34, minHeight: 34)
-            .padding(.horizontal, 4)
-            .modifier(ChipBackground(isSelected: isSelected, glassID: glassID, namespace: namespace))
-            .contentShape(Capsule())
-            // Il tocco singolo scatta subito, senza aspettare un eventuale secondo; il doppio
-            // tocco è riconosciuto insieme.
-            .onTapGesture {
-                if !isDisabled { action() }
-            }
-            .simultaneousGesture(TapGesture(count: 2).onEnded(onDoubleTap))
-            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-            .accessibilityValue(isDisabled ? "Disattivato" : "")
-            .accessibilityAction(named: isDisabled ? "Riattiva" : "Disattiva", onDoubleTap)
-    }
-}
-
-/// Identifica il vetro di ogni pastiglia; quelle scelte condividono quello della loro fila.
-private enum ChipGlassID: Hashable {
-    case week(Int)
-    case day(Weekday)
-    case selectedWeek
-    case selectedDay
-
-    var selection: Self {
-        switch self {
-        case .week, .selectedWeek: .selectedWeek
-        case .day, .selectedDay: .selectedDay
-        }
-    }
-}
-
-/// Vetro colorato con l'accento per la pastiglia scelta, vetro semplice per le altre.
-private struct ChipBackground: ViewModifier {
-    let isSelected: Bool
-    let glassID: ChipGlassID
-    let namespace: Namespace.ID
-
-    func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content.glassEffect(
-                isSelected ? .regular.tint(.accentColor).interactive() : .regular.interactive(),
-                in: .capsule
-            )
-            // La scelta ha un solo vetro per fila, che al cambio si trasforma passando
-            // dalla pastiglia vecchia alla nuova.
-            .glassEffectID(isSelected ? glassID.selection : glassID, in: namespace)
-        } else {
-            content.background(Capsule().fill(isSelected ? Color.accentColor : Color(.tertiarySystemFill)))
-        }
-    }
-}
-
-/// Riga di un'attività: nome, timer e valori dei campi compilati.
-private struct ExerciseRow: View {
-    let exercise: Exercise
-    let fields: [FieldDefinition]
-
-    /// I campi compilati nell'ordine del modello, es. "Metronomo 80 bpm".
-    private var details: String {
-        fields.compactMap { field in
-            let value = exercise.value(for: field)
-            guard !value.isEmpty else { return nil }
-            let unit = field.kind == .number && !field.unit.isEmpty ? " \(field.unit)" : ""
-            return "\(field.name) \(value)\(unit)"
-        }
-        .joined(separator: " · ")
-    }
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(exercise.name)
-                if !details.isEmpty {
-                    Text(details)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            Spacer()
-            if exercise.hasTimer {
-                Text(exercise.timerSeconds.formattedDuration)
-                    .font(.subheadline)
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-            }
-        }
-        // La riga sotto parte dal nome, non dal tempo del timer.
-        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
-    }
 }

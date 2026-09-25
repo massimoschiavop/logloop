@@ -64,6 +64,7 @@ private struct TemplateEditorView: View {
         Form {
             Section("Nome") {
                 TextField("Es. Pianoforte", text: $template.name)
+                    .clearButton(text: $template.name)
             }
 
             Section("Aspetto") {

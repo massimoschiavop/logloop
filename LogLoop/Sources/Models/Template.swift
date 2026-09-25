@@ -23,7 +23,7 @@ final class Template: Sortable {
     var createdAt: Date = Date()
     var sortIndex: Int = 0
     /// Tempo proposto alle attività con il timer.
-    var timerSeconds: Int = Exercise.defaultTimerSeconds
+    var timerSeconds: Int = Activity.defaultTimerSeconds
     /// Se le attività nuove delle schede nascono col timer attivo.
     var timerEnabledByDefault: Bool = false
 
@@ -55,10 +55,11 @@ final class Template: Sortable {
     var categories: [TemplateCategory] { categoriesStorage.sortedByIndex() }
     var fields: [FieldDefinition] { fieldsStorage.sortedByIndex() }
 
-    /// Una copia completa di categorie e campi, non ancora inserita in alcun contesto.
-    func duplicate(sortIndex: Int) -> Template {
+    /// Una copia completa di categorie e campi, non ancora inserita in alcun contesto; il nome
+    /// è il primo "(copia n)" libero tra `existingNames`.
+    func duplicate(sortIndex: Int, existingNames: [String]) -> Template {
         let copy = Template(
-            name: "\(name) (copia)",
+            name: name.copyName(avoiding: existingNames),
             iconName: iconName,
             colorHex: colorHex,
             sortIndex: sortIndex
@@ -99,10 +100,11 @@ extension Template {
         return field
     }
 
-    /// Elimina la categoria e, con lei, le sue attività in tutte le schede del modello.
+    /// Elimina la categoria: le sue attività restano nelle schede del modello, in "Senza
+    /// categoria".
     func removeCategory(_ category: TemplateCategory) {
         let remaining = categories.filter { $0.identifier != category.identifier }
-        category.exercises.forEach { modelContext?.delete($0) }
+        category.activities.forEach { $0.category = nil }
         modelContext?.delete(category)
         remaining.renumber()
     }

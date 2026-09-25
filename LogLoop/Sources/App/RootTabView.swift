@@ -58,8 +58,8 @@ private enum ShakePrompt: Equatable {
 
     var title: String {
         switch self {
-        case .undo(let name): "Annulla \(name.isEmpty ? "l'ultima modifica" : name)"
-        case .redo(let name): "Ripristina \(name.isEmpty ? "l'ultima modifica" : name)"
+        case .undo(let name): "Annulla \(name.isEmpty ? "l'Ultima Modifica" : name)"
+        case .redo(let name): "Ripristina \(name.isEmpty ? "l'Ultima Modifica" : name)"
         }
     }
 }

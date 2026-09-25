@@ -7,12 +7,12 @@ enum DemoData {
     static func eraseAll(in context: ModelContext) {
         // Prima ciò che è contenuto, poi schede e modelli: così nessuna eliminazione avviene a
         // cascata su oggetti mai caricati, che con l'annulla attivo manda SwiftData in crash.
-        deleteAll(Exercise.self, in: context)
+        deleteAll(Activity.self, in: context)
         deleteAll(TemplateCategory.self, in: context)
         deleteAll(FieldDefinition.self, in: context)
         deleteAll(Sheet.self, in: context)
         deleteAll(Template.self, in: context)
-        context.nameUndo("svuotamento dell'app")
+        context.nameUndo("Svuotamento dell'App")
         try? context.save()
     }
 
@@ -37,7 +37,7 @@ enum DemoData {
             sheet.sortIndex = sheetOffset + offset
             context.insert(sheet)
         }
-        context.nameUndo("aggiunta dei dati di prova")
+        context.nameUndo("Aggiunta dei Dati di Prova")
         try? context.save()
     }
 
@@ -141,12 +141,12 @@ enum DemoData {
         ]
         for (day, items) in plan {
             for (index, item) in items.enumerated() {
-                let exercise = Exercise(name: item.0, weekday: day, sortIndex: index)
-                exercise.category = template.categories[item.1]
-                exercise.hasTimer = true
-                exercise.timerSeconds = template.timerSeconds
-                exercise.fieldValues = values(item.2, for: template)
-                sheet.exercisesStorage.append(exercise)
+                let activity = Activity(name: item.0, weekday: day, sortIndex: index)
+                activity.category = template.categories[item.1]
+                activity.hasTimer = true
+                activity.timerSeconds = template.timerSeconds
+                activity.fieldValues = values(item.2, for: template)
+                sheet.activitiesStorage.append(activity)
             }
         }
         return sheet
@@ -175,31 +175,31 @@ enum DemoData {
         for week in 1...sheet.weekCount {
             for (day, items) in plan {
                 for (index, item) in items.enumerated() {
-                    let exercise = Exercise(name: item.0, week: week, weekday: day, sortIndex: index)
-                    exercise.category = template.categories[item.1]
+                    let activity = Activity(name: item.0, week: week, weekday: day, sortIndex: index)
+                    activity.category = template.categories[item.1]
                     let weight = item.3 == 0 ? "" : formatted(item.3 * (1 + 0.05 * Double(week - 1)))
-                    exercise.fieldValues = values(["4", "\(item.2)", weight], for: template)
-                    sheet.exercisesStorage.append(exercise)
+                    activity.fieldValues = values(["4", "\(item.2)", weight], for: template)
+                    sheet.activitiesStorage.append(activity)
                 }
             }
         }
         return sheet
     }
 
-    /// Senza settimane né giorni, con un'attività senza categoria.
+    /// Senza settimane né giorni.
     private static func readingSheet(template: Template) -> Sheet {
         let sheet = Sheet(title: "Letture", template: template)
-        let items: [(String, Int?, [String])] = [
+        let items: [(String, Int, [String])] = [
             ("Il nome della rosa", 0, ["120", "Arrivato al terzo giorno"]),
             ("Se una notte d'inverno un viaggiatore", 0, ["45", ""]),
             ("Sapiens", 1, ["200", "Capitolo sulla rivoluzione agricola"]),
-            ("Articoli salvati", nil, ["", ""])
+            ("Articoli salvati", 1, ["", ""])
         ]
         for (index, item) in items.enumerated() {
-            let exercise = Exercise(name: item.0, weekday: nil, sortIndex: index)
-            exercise.category = item.1.map { template.categories[$0] }
-            exercise.fieldValues = values(item.2, for: template)
-            sheet.exercisesStorage.append(exercise)
+            let activity = Activity(name: item.0, weekday: nil, sortIndex: index)
+            activity.category = template.categories[item.1]
+            activity.fieldValues = values(item.2, for: template)
+            sheet.activitiesStorage.append(activity)
         }
         return sheet
     }

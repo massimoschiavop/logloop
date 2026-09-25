@@ -37,6 +37,7 @@ struct SheetEditorView: View {
                 TextField("Es. Studio pianoforte", text: $title)
                     .focused($isTitleFocused)
                     .submitLabel(.done)
+                    .clearButton(text: $title)
             }
 
             Section {
@@ -120,7 +121,7 @@ struct SheetEditorView: View {
         target.weekCount = weekCount
         target.showsDays = showsDays
         target.weekdays = weekdays
-        context.nameUndo(sheet == nil ? "creazione scheda" : "modifica scheda")
+        context.nameUndo(sheet == nil ? "Creazione Scheda" : "Modifica Scheda")
         try? context.save()
         if sheet == nil, let onCreate {
             onCreate(target)

@@ -29,14 +29,10 @@ struct TemplateListView: View {
                             DeleteButton {
                                 delete(template)
                             }
-                            Button {
-                                context.insert(template.duplicate(sortIndex: templates.count))
-                                context.nameUndo("duplicazione modello")
-                            } label: {
-                                Label("Duplica", systemImage: "plus.square.on.square")
+                            DuplicateButton {
+                                context.insert(template.duplicate(sortIndex: templates.count, existingNames: templates.map(\.name)))
+                                context.nameUndo("Duplicazione Modello")
                             }
-                            .labelStyle(.iconOnly)
-                            .tint(.blue)
                         }
                     }
                     .onMove(perform: move)
@@ -83,14 +79,14 @@ struct TemplateListView: View {
         template.fieldsStorage.forEach(context.delete)
         context.delete(template)
         remaining.renumber()
-        context.nameUndo("eliminazione modello")
+        context.nameUndo("Eliminazione Modello")
     }
 
     private func move(from source: IndexSet, to destination: Int) {
         var list = templates
         list.move(fromOffsets: source, toOffset: destination)
         list.renumber()
-        context.nameUndo("spostamento modello")
+        context.nameUndo("Spostamento Modello")
     }
 }
 

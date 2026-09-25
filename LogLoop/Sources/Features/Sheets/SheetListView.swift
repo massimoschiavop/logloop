@@ -41,14 +41,10 @@ struct SheetListView: View {
                                 DeleteButton {
                                     delete(sheet)
                                 }
-                                Button {
-                                    context.insert(sheet.duplicate(sortIndex: manualSheets.count))
-                                    context.nameUndo("duplicazione scheda")
-                                } label: {
-                                    Label("Duplica", systemImage: "plus.square.on.square")
+                                DuplicateButton {
+                                    context.insert(sheet.duplicate(sortIndex: manualSheets.count, existingTitles: manualSheets.map(\.title)))
+                                    context.nameUndo("Duplicazione Scheda")
                                 }
-                                .labelStyle(.iconOnly)
-                                .tint(.blue)
                             }
                         }
                         // Il drag & drop è attivo solo nell'ordinamento manuale.
@@ -118,17 +114,17 @@ struct SheetListView: View {
         let remaining = manualSheets.filter { $0.persistentModelID != sheet.persistentModelID }
         // Le attività si eliminano una per una invece di lasciarle alla cascata: con l'annulla
         // attivo SwiftData va in crash eliminando a cascata oggetti mai caricati.
-        sheet.exercisesStorage.forEach(context.delete)
+        sheet.activitiesStorage.forEach(context.delete)
         context.delete(sheet)
         remaining.renumber()
-        context.nameUndo("eliminazione scheda")
+        context.nameUndo("Eliminazione Scheda")
     }
 
     private func move(from source: IndexSet, to destination: Int) {
         var list = manualSheets
         list.move(fromOffsets: source, toOffset: destination)
         list.renumber()
-        context.nameUndo("spostamento scheda")
+        context.nameUndo("Spostamento Scheda")
     }
 }
 
