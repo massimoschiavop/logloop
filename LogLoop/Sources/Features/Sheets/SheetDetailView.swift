@@ -9,6 +9,13 @@ struct SheetDetailView: View {
     @Environment(\.modelContext) private var context
     @State private var selectedWeek = 1
     @State private var selectedDay = Weekday.today
+    /// Settimana e giorno mostrati prima dell'ultimo tocco su una pastiglia: il doppio tocco
+    /// che la disattiva ci riporta lì, annullando lo spostamento del primo tocco.
+    @State private var weekBeforeTap: Int?
+    @State private var dayBeforeTap: Weekday?
+    /// La pagina a cui è arrivato lo scorrimento; la scelta la segue e, al tocco delle
+    /// pastiglie, la guida (vedi `follow(_:)`).
+    @State private var scrolledPage: Page?
     /// Lega il vetro delle pastiglie scelte, che scivola da una all'altra.
     @Namespace private var chipGlass
     /// La sezione in cui si sta scrivendo un esercizio nuovo, e il suo nome.
@@ -31,12 +38,27 @@ struct SheetDetailView: View {
         Weekday.allCases.filter { sheet.weekdays.contains($0) }
     }
 
-    /// Settimana e giorno scelti, riportati entro i limiti della scheda se nel frattempo
-    /// sono cambiati dall'editor.
-    private var currentWeek: Int { min(max(selectedWeek, 1), weekCount) }
     private var weekCount: Int { sheet.showsWeeks ? sheet.weekCount : 1 }
+
+    /// Le settimane e i giorni non disattivati, gli unici con una pagina. Se lo fossero tutti
+    /// (es. dopo aver tolto settimane dall'editor) valgono tutti.
+    private var enabledWeeks: [Int] {
+        let all = Array(1...weekCount)
+        let enabled = sheet.showsWeeks ? all.filter { !sheet.disabledWeeks.contains($0) } : all
+        return enabled.isEmpty ? all : enabled
+    }
+    private var enabledDays: [Weekday] {
+        let enabled = days.filter { sheet.disabledWeekdayMask & $0.bit == 0 }
+        return enabled.isEmpty ? days : enabled
+    }
+
+    /// Settimana e giorno scelti o, se non ci sono più o sono disattivati, i primi attivi dopo
+    /// di loro: per la settimana altrimenti l'ultima, per il giorno si riparte da lunedì.
+    private var currentWeek: Int {
+        enabledWeeks.first { $0 >= selectedWeek } ?? enabledWeeks.last ?? 1
+    }
     private var currentDay: Weekday? {
-        days.contains(selectedDay) ? selectedDay : days.first
+        enabledDays.first { $0.rawValue >= selectedDay.rawValue } ?? enabledDays.first
     }
 
     /// Le chiavi di `collapsed` per ogni categoria, compresa "Senza categoria".
@@ -46,24 +68,27 @@ struct SheetDetailView: View {
 
     private var isAllCollapsed: Bool { allCategoryKeys.isSubset(of: collapsed) }
 
-    /// Tutte le pagine in fila, giorno dopo giorno e settimana dopo settimana.
+    /// Tutte le pagine attive in fila, giorno dopo giorno e settimana dopo settimana.
     private var pages: [Page] {
-        (1...weekCount).flatMap { week in
-            (sheet.showsDays && !days.isEmpty ? days.map(Optional.some) : [nil]).map { Page(week: week, day: $0) }
+        enabledWeeks.flatMap { week in
+            (sheet.showsDays && !days.isEmpty ? enabledDays.map(Optional.some) : [nil]).map { Page(week: week, day: $0) }
         }
     }
 
-    /// La pagina mostrata: segue lo scorrimento e, al tocco delle pastiglie, lo guida.
-    private var position: Binding<Page?> {
-        Binding {
-            Page(week: currentWeek, day: sheet.showsDays ? currentDay : nil)
-        } set: { page in
-            guard let page else { return }
-            // Animato, perché anche scorrendo il vetro della scelta scivoli sulla pastiglia nuova.
-            withAnimation(.snappy) {
-                selectedWeek = page.week
-                if let day = page.day { selectedDay = day }
-            }
+    /// La pagina di settimana e giorno scelti.
+    private var currentPage: Page {
+        Page(week: currentWeek, day: sheet.showsDays ? currentDay : nil)
+    }
+
+    /// Porta la scelta sulla pagina a cui si è scorsi. Ignora le pagine appena disattivate,
+    /// che lo scorrimento può ancora segnalare mentre si aggiorna: inseguirle rimbalzerebbe
+    /// all'infinito tra la pagina segnalata e quella scelta, bloccando l'app.
+    private func follow(_ page: Page?) {
+        guard let page, page != currentPage, pages.contains(page) else { return }
+        // Animato, perché anche scorrendo il vetro della scelta scivoli sulla pastiglia nuova.
+        withAnimation(.snappy) {
+            selectedWeek = page.week
+            if let day = page.day { selectedDay = day }
         }
     }
 
@@ -80,7 +105,14 @@ struct SheetDetailView: View {
         }
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
-        .scrollPosition(id: position)
+        .scrollPosition(id: $scrolledPage)
+        .onAppear { scrolledPage = currentPage }
+        .onChange(of: scrolledPage) { follow(scrolledPage) }
+        .onChange(of: currentPage) {
+            // Scelta dalle pastiglie: le pagine scorrono fin lì.
+            guard scrolledPage != currentPage else { return }
+            withAnimation(.snappy(duration: 0.3)) { scrolledPage = currentPage }
+        }
         .background(ContentPopGestureDisabler())
         .modifier(HeaderBar(isVisible: sheet.showsWeeks || sheet.showsDays) { header })
         .sheet(item: $editingExercise) { exercise in
@@ -293,10 +325,40 @@ struct SheetDetailView: View {
 
     /// Passa a un'altra settimana o giorno facendo scorrere le pagine.
     private func select(week: Int? = nil, day: Weekday? = nil) {
+        if week != nil { weekBeforeTap = currentWeek }
+        if day != nil { dayBeforeTap = currentDay }
         withAnimation(.snappy(duration: 0.3)) {
             if let week { selectedWeek = week }
             if let day { selectedDay = day }
         }
+    }
+
+    /// Disattiva una settimana, o la riattiva se lo era; l'ultima attiva resta tale.
+    private func toggleWeek(_ week: Int) {
+        guard sheet.disabledWeeks.contains(week) || enabledWeeks.count > 1 else { return }
+        withAnimation(.snappy(duration: 0.3)) {
+            if sheet.disabledWeeks.contains(week) {
+                sheet.disabledWeeks.removeAll { $0 == week }
+            } else {
+                sheet.disabledWeeks.append(week)
+                if let weekBeforeTap, enabledWeeks.contains(weekBeforeTap) { selectedWeek = weekBeforeTap }
+            }
+            // Resta sulla pagina mostrata, anche riattivando quella scelta prima.
+            selectedWeek = currentWeek
+        }
+        weekBeforeTap = nil
+    }
+
+    /// Come `toggleWeek(_:)`, per un giorno.
+    private func toggleDay(_ day: Weekday) {
+        let isDisabled = sheet.disabledWeekdayMask & day.bit != 0
+        guard isDisabled || enabledDays.count > 1 else { return }
+        withAnimation(.snappy(duration: 0.3)) {
+            sheet.disabledWeekdayMask ^= day.bit
+            if !isDisabled, let dayBeforeTap, enabledDays.contains(dayBeforeTap) { selectedDay = dayBeforeTap }
+            if let currentDay { selectedDay = currentDay }
+        }
+        dayBeforeTap = nil
     }
 
     /// Sposta un esercizio trascinato prima di `next`, o dopo `last` se `next` è nullo, e gli
@@ -353,10 +415,13 @@ struct SheetDetailView: View {
                         SelectorChip(
                             title: day.initial,
                             isSelected: day == currentDay,
+                            isDisabled: !enabledDays.contains(day),
                             glassID: .day(day),
                             namespace: chipGlass
                         ) {
                             select(day: day)
+                        } onDoubleTap: {
+                            toggleDay(day)
                         }
                         .accessibilityLabel(day.name)
                     }
@@ -375,10 +440,13 @@ struct SheetDetailView: View {
                 SelectorChip(
                     title: "S\(week)",
                     isSelected: week == currentWeek,
+                    isDisabled: !enabledWeeks.contains(week),
                     glassID: .week(week),
                     namespace: chipGlass
                 ) {
                     select(week: week)
+                } onDoubleTap: {
+                    toggleWeek(week)
                 }
                 .id(week)
                 .accessibilityLabel("Settimana \(week)")
@@ -601,25 +669,35 @@ private struct ChipRow<Content: View>: View {
     }
 }
 
-/// Pastiglia selezionabile dell'intestazione, piena quando è scelta.
+/// Pastiglia selezionabile dell'intestazione, piena quando è scelta. Col doppio tocco si
+/// disattiva: sbiadita e barrata, non si sceglie più finché non la si riattiva allo stesso modo.
 private struct SelectorChip: View {
     let title: String
     let isSelected: Bool
+    let isDisabled: Bool
     let glassID: ChipGlassID
     let namespace: Namespace.ID
     let action: () -> Void
+    let onDoubleTap: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
-                .frame(minWidth: 34, minHeight: 34)
-                .padding(.horizontal, 4)
-                .modifier(ChipBackground(isSelected: isSelected, glassID: glassID, namespace: namespace))
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        Text(title)
+            .font(.subheadline.weight(.semibold))
+            .strikethrough(isDisabled)
+            .foregroundStyle(isSelected ? Color.white : isDisabled ? Color(.tertiaryLabel) : Color.primary)
+            .frame(minWidth: 34, minHeight: 34)
+            .padding(.horizontal, 4)
+            .modifier(ChipBackground(isSelected: isSelected, glassID: glassID, namespace: namespace))
+            .contentShape(Capsule())
+            // Il tocco singolo scatta subito, senza aspettare un eventuale secondo; il doppio
+            // tocco è riconosciuto insieme.
+            .onTapGesture {
+                if !isDisabled { action() }
+            }
+            .simultaneousGesture(TapGesture(count: 2).onEnded(onDoubleTap))
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            .accessibilityValue(isDisabled ? "Disattivato" : "")
+            .accessibilityAction(named: isDisabled ? "Riattiva" : "Disattiva", onDoubleTap)
     }
 }
 

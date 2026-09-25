@@ -19,6 +19,10 @@ final class Sheet: Sortable {
     /// Se la scheda mostra i giorni, e quali: maschera di bit su `Weekday`.
     var showsDays: Bool = false
     var weekdayMask: Int = Weekday.allMask
+    /// Settimane e giorni disattivati col doppio tocco: restano nell'intestazione ma le loro
+    /// pagine non si mostrano. I giorni come maschera di bit su `Weekday`.
+    var disabledWeeks: [Int] = []
+    var disabledWeekdayMask: Int = 0
 
     /// Relazione non ordinata come la salva SwiftData: per l'ordine dell'utente usare
     /// `exercises(on:)`.
@@ -57,6 +61,8 @@ final class Sheet: Sortable {
         copy.weekCount = weekCount
         copy.showsDays = showsDays
         copy.weekdayMask = weekdayMask
+        copy.disabledWeeks = disabledWeeks
+        copy.disabledWeekdayMask = disabledWeekdayMask
         copy.exercisesStorage = exercisesStorage.map { $0.copy() }
         return copy
     }
