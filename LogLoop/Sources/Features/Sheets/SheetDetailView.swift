@@ -15,6 +15,14 @@ struct SheetDetailView: View {
     @State private var adding: AddTarget?
     @State private var newName = ""
     @FocusState private var isNewNameFocused: Bool
+    /// Le categorie compresse, per identificativo (nullo per "Senza categoria"); valgono per
+    /// tutte le pagine.
+    @State private var collapsed: Set<UUID?> = []
+    /// Vero mentre si trascina un esercizio: solo allora titoli e segnaposto si sbloccano, perché
+    /// la lista accetta il rilascio solo sopra righe non bloccate.
+    @State private var isReordering = false
+    /// Cambiandola la lista si ricostruisce, rimettendo a posto una riga non spostabile.
+    @State private var listRevision = 0
     /// L'esercizio aperto nell'editor, in un foglio dal basso.
     @State private var editingExercise: Exercise?
 
@@ -30,6 +38,13 @@ struct SheetDetailView: View {
     private var currentDay: Weekday? {
         days.contains(selectedDay) ? selectedDay : days.first
     }
+
+    /// Le chiavi di `collapsed` per ogni categoria, compresa "Senza categoria".
+    private var allCategoryKeys: Set<UUID?> {
+        Set((sheet.template?.categories ?? []).map(\.identifier)).union([nil])
+    }
+
+    private var isAllCollapsed: Bool { allCategoryKeys.isSubset(of: collapsed) }
 
     /// Tutte le pagine in fila, giorno dopo giorno e settimana dopo settimana.
     private var pages: [Page] {
@@ -57,7 +72,7 @@ struct SheetDetailView: View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 0) {
                 ForEach(pages) { page in
-                    pageContent(for: page.day)
+                    pageContent(for: page)
                         .containerRelativeFrame(.horizontal)
                 }
             }
@@ -76,6 +91,17 @@ struct SheetDetailView: View {
         .navigationTitle(sheet.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    withAnimation { collapsed = isAllCollapsed ? [] : allCategoryKeys }
+                } label: {
+                    if isAllCollapsed {
+                        Label("Espandi tutte le categorie", systemImage: "rectangle.expand.vertical")
+                    } else {
+                        Label("Comprimi tutte le categorie", systemImage: "rectangle.compress.vertical")
+                    }
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink(value: SheetRoute.edit(sheet)) {
                     Label("Modifica scheda", systemImage: "pencil")
@@ -104,39 +130,58 @@ struct SheetDetailView: View {
 
     /// Le righe di una pagina in fila: titolo di ogni categoria, i suoi esercizi e la riga per
     /// aggiungerne. Stanno in un'unica lista perché il trascinamento passi da una all'altra.
-    private func rows(for day: Weekday?) -> [PageRow] {
-        let groups = groups(of: sheet.exercises(on: day))
+    private func rows(for page: Page) -> [PageRow] {
+        let groups = groups(of: sheet.exercises(week: page.week, day: page.day))
         return groups.flatMap { group -> [PageRow] in
             let category = group.category?.identifier
-            let target = AddTarget(day: day, category: category)
+            let target = AddTarget(page: page, category: category)
             // Senza categorie nel modello c'è una sola sezione, ma il titolo serve per il +.
             var rows: [PageRow] = if let title = group.category {
-                [.title(target, title.name, Color(hex: title.colorHex))]
+                [.title(target, title.name, Color(hex: title.colorHex), group.exercises.count)]
             } else {
-                [.title(target, groups.count > 1 ? "Senza categoria" : "Esercizi", nil)]
+                [.title(target, groups.count > 1 ? "Senza categoria" : "Esercizi", nil, group.exercises.count)]
             }
-            rows += group.exercises.map { .exercise($0, category) }
-            if adding == target { rows.append(.newName(target)) }
+            if !collapsed.contains(category) {
+                rows += group.exercises.map { .exercise($0, category) }
+                if adding == target {
+                    rows.append(.newName(target))
+                } else if group.exercises.isEmpty {
+                    rows.append(.empty(target))
+                }
+            }
             return rows
         }
     }
 
-    private func pageContent(for day: Weekday?) -> some View {
-        let rows = rows(for: day)
+    private func pageContent(for page: Page) -> some View {
+        let rows = rows(for: page)
         return ScrollViewReader { proxy in
             List {
-                // Nessuna riga ha moveDisabled: la lista rifiuta di lasciare un esercizio accanto a
-                // una riga bloccata, per esempio subito sotto un titolo. Si spostano però solo gli
-                // esercizi: il resto, se trascinato, torna al suo posto.
+                // Si sollevano solo gli esercizi: il resto è bloccato finché non se ne trascina
+                // uno (vedi `isReordering`).
                 ForEach(rows) { row in
                     switch row {
-                    case .title(let target, let title, let color):
-                        CategoryTitleRow(title: title, color: color) {
+                    case .title(let target, let title, let color, let count):
+                        CategoryTitleRow(
+                            title: title,
+                            color: color,
+                            count: count,
+                            isCollapsed: collapsed.contains(target.category)
+                        ) {
+                            withAnimation {
+                                if !collapsed.insert(target.category).inserted {
+                                    collapsed.remove(target.category)
+                                }
+                            }
+                        } onAdd: {
                             commitNewExercise()
                             newName = ""
+                            // Si scrive nella categoria, quindi la riapre se era compressa.
+                            withAnimation { _ = collapsed.remove(target.category) }
                             adding = target
                             isNewNameFocused = true
                         }
+                        .moveDisabled(!isReordering)
                     case .exercise(let exercise, _):
                         Button {
                             commitNewExercise()
@@ -147,6 +192,15 @@ struct SheetDetailView: View {
                         }
                         .foregroundStyle(.primary)
                         .swipeToDelete { delete(exercise) }
+                        // Chiesto quando l'esercizio viene sollevato: sblocca le altre righe.
+                        .itemProvider {
+                            DispatchQueue.main.async { isReordering = true }
+                            return NSItemProvider()
+                        }
+                    case .empty:
+                        Text("Nessun esercizio")
+                            .foregroundStyle(.secondary)
+                            .moveDisabled(!isReordering)
                     case .newName:
                         TextField("Nome dell'esercizio", text: $newName)
                             .focused($isNewNameFocused)
@@ -156,17 +210,19 @@ struct SheetDetailView: View {
                             .onChange(of: isNewNameFocused) {
                                 if !isNewNameFocused { commitNewExercise() }
                             }
+                            .moveDisabled(!isReordering)
                     }
                 }
                 .onMove { source, destination in
                     move(in: rows, from: source, to: destination)
                 }
             }
+            .id(listRevision)
             .background(RowSwipePriority())
             // La riga del nome nuovo sale a metà schermo, ben sopra la tastiera, quando questa
             // ha finito di aprirsi.
             .onChange(of: adding) {
-                guard let adding, adding.day == day else { return }
+                guard let adding, adding.page == page else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     withAnimation { proxy.scrollTo(PageRow.newName(adding).id, anchor: .center) }
                 }
@@ -178,7 +234,13 @@ struct SheetDetailView: View {
     /// sotto un titolo va in cima alla categoria, sotto un esercizio subito dopo di lui, sotto
     /// la riga del nome nuovo in fondo alla categoria di quella riga.
     private func move(in rows: [PageRow], from source: IndexSet, to destination: Int) {
-        guard let from = source.first, case .exercise(let moved, _) = rows[from] else { return }
+        isReordering = false
+        guard let from = source.first, case .exercise(let moved, _) = rows[from] else {
+            // Una riga sbloccata sollevata per sbaglio (dopo un trascinamento annullato):
+            // la lista la mostrerebbe spostata, quindi la si ricostruisce.
+            DispatchQueue.main.async { listRevision += 1 }
+            return
+        }
         let others = rows.enumerated().filter { $0.offset != from }
         let above = others.last { $0.offset < destination }?.element
         let category = above?.category ?? rows.first?.category
@@ -194,7 +256,7 @@ struct SheetDetailView: View {
             next = index.flatMap { siblings.indices.contains($0 + 1) ? siblings[$0 + 1] : nil }
         case .title, nil:
             next = siblings.first
-        case .newName:
+        case .newName, .empty:
             next = nil
         }
         // Dopo il rilascio: cambiare la categoria mentre la lista chiude il suo spostamento
@@ -217,9 +279,11 @@ struct SheetDetailView: View {
         // Come nell'editor: in fondo, col timer del modello; senza giorni vale per tutti.
         let exercise = Exercise(
             name: name,
-            weekday: sheet.showsDays ? target.day : nil,
+            week: sheet.showsWeeks ? target.page.week : nil,
+            weekday: sheet.showsDays ? target.page.day : nil,
             sortIndex: sheet.exercisesStorage.count
         )
+        exercise.hasTimer = sheet.template?.timerEnabledByDefault ?? false
         exercise.timerSeconds = sheet.template?.timerSeconds ?? Exercise.defaultTimerSeconds
         exercise.category = sheet.template?.categories.first { $0.identifier == target.category }
         exercise.sheet = sheet
@@ -331,39 +395,48 @@ private struct ExerciseGroup: Identifiable {
     var id: UUID? { category?.identifier }
 }
 
-/// Dove va l'esercizio che si sta scrivendo: giorno della pagina e categoria della sezione.
+/// Dove va l'esercizio che si sta scrivendo: settimana e giorno della pagina e categoria
+/// della sezione.
 private struct AddTarget: Hashable {
-    let day: Weekday?
+    let page: Page
     let category: UUID?
 }
 
 /// Una riga della lista di una pagina, con la categoria a cui appartiene.
 private enum PageRow: Identifiable {
-    case title(AddTarget, String, Color?)
+    case title(AddTarget, String, Color?, Int)
     case exercise(Exercise, UUID?)
     case newName(AddTarget)
+    /// Il segnaposto di una categoria vuota.
+    case empty(AddTarget)
 
     var id: String {
         switch self {
-        case .title(let target, _, _): "title-\(target.category?.uuidString ?? "none")"
+        case .title(let target, _, _, _): "title-\(target.category?.uuidString ?? "none")"
         case .exercise(let exercise, _): exercise.identifier.uuidString
         case .newName(let target): "new-\(target.category?.uuidString ?? "none")"
+        case .empty(let target): "empty-\(target.category?.uuidString ?? "none")"
         }
     }
 
     var category: UUID? {
         switch self {
         case .exercise(_, let category): category
-        case .title(let target, _, _), .newName(let target): target.category
+        case .title(let target, _, _, _), .newName(let target), .empty(let target):
+            target.category
         }
     }
 }
 
-/// La prima riga di una sezione, col nome della categoria al centro e il + per aggiungervi
-/// un esercizio.
+/// La prima riga di una categoria: il nome al centro, la freccia per comprimerla e il + per
+/// aggiungervi un esercizio.
 private struct CategoryTitleRow: View {
     let title: String
     let color: Color?
+    /// Gli esercizi della categoria, mostrati accanto al titolo quando è compressa.
+    let count: Int
+    let isCollapsed: Bool
+    let onToggle: () -> Void
     let onAdd: () -> Void
 
     var body: some View {
@@ -376,15 +449,33 @@ private struct CategoryTitleRow: View {
             Text(title)
                 .font(.headline)
                 .foregroundStyle(color == nil ? .secondary : .primary)
+            if isCollapsed, count > 0 {
+                Text(count, format: .number)
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity)
-        // Il + in fondo alla riga, senza spostare il titolo dal centro.
+        // La freccia a sinistra e il + a destra, senza spostare il titolo dal centro.
+        .overlay(alignment: .leading) {
+            Image(systemName: "chevron.down")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .rotationEffect(.degrees(isCollapsed ? -90 : 0))
+        }
         .overlay(alignment: .trailing) {
             Button("Aggiungi esercizio", systemImage: "plus", action: onAdd)
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
                 .font(.headline)
         }
+        // Toccando la riga, fuori dal +, la categoria si comprime o si riapre.
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onToggle)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityValue(isCollapsed ? "Compressa" : "Espansa")
+        .accessibilityAction(named: isCollapsed ? "Espandi" : "Comprimi", onToggle)
         // Lo sfondo appena più chiaro basta a staccarla dagli esercizi, senza la riga sotto.
         .listRowSeparator(.hidden)
         .listRowBackground(

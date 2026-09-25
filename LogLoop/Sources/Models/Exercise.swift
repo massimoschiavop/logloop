@@ -1,8 +1,8 @@
 import Foundation
 import SwiftData
 
-/// Esercizio di una scheda. Vale per un giorno della settimana, uguale in tutte le settimane;
-/// senza giorno (scheda senza giorni) vale per tutti.
+/// Esercizio di una scheda, in una settimana e un giorno. Senza giorno (scheda senza giorni)
+/// vale per tutti i giorni; senza settimana (scheda senza settimane) sta nella prima.
 @Model
 final class Exercise: Sortable {
     static let defaultTimerSeconds = 60
@@ -13,15 +13,18 @@ final class Exercise: Sortable {
     var timerSeconds: Int = Exercise.defaultTimerSeconds
     /// `Weekday.rawValue` del giorno, nullo se vale per tutti i giorni.
     var weekdayRaw: Int?
+    /// La settimana, da 1; nulla se creato quando la scheda non aveva le settimane.
+    var week: Int?
     /// Valori dei campi del modello, per `FieldDefinition.identifier`.
     var fieldValues: [String: String] = [:]
     var sortIndex: Int = 0
     var sheet: Sheet?
     var category: TemplateCategory?
 
-    init(name: String, weekday: Weekday?, sortIndex: Int = 0) {
+    init(name: String, week: Int? = nil, weekday: Weekday?, sortIndex: Int = 0) {
         self.identifier = UUID()
         self.name = name
+        self.week = week
         self.weekdayRaw = weekday?.rawValue
         self.sortIndex = sortIndex
     }
@@ -37,7 +40,7 @@ final class Exercise: Sortable {
 
     /// Una copia scollegata dalla scheda, con un nuovo identificativo.
     func copy() -> Exercise {
-        let copy = Exercise(name: name, weekday: weekday, sortIndex: sortIndex)
+        let copy = Exercise(name: name, week: week, weekday: weekday, sortIndex: sortIndex)
         copy.hasTimer = hasTimer
         copy.timerSeconds = timerSeconds
         copy.fieldValues = fieldValues

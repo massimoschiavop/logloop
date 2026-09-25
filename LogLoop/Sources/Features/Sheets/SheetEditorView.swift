@@ -71,16 +71,18 @@ struct SheetEditorView: View {
             }
 
             Section {
-                Toggle("Mostra settimane", isOn: $showsWeeks.animation())
+                Toggle("Vista Settimana", isOn: $showsWeeks.animation())
                 if showsWeeks {
                     Stepper(value: $weekCount, in: 1...52) {
-                        LabeledContent("Numero di settimane", value: "\(weekCount)")
+                        LabeledContent("Settimane", value: "\(weekCount)")
                     }
                 }
-                Toggle("Mostra giorni", isOn: $showsDays.animation())
+                Toggle("Vista Giorni", isOn: $showsDays.animation())
                 if showsDays {
                     WeekdayRow(selection: $weekdays)
                 }
+            } footer: {
+                Text("Divide gli esercizi della scheda per settimana e per giorno: ogni giorno di ogni settimana ha i suoi esercizi.")
             }
         }
         .navigationTitle(sheet == nil ? "Nuova scheda" : "Modifica scheda")

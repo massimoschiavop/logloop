@@ -24,7 +24,7 @@ struct ExerciseEditorView: View {
         self.exercise = exercise
         let categories = sheet.template?.categories ?? []
         _name = State(initialValue: exercise?.name ?? "")
-        _hasTimer = State(initialValue: exercise?.hasTimer ?? false)
+        _hasTimer = State(initialValue: exercise?.hasTimer ?? sheet.template?.timerEnabledByDefault ?? false)
         _timerSeconds = State(initialValue: exercise?.timerSeconds
             ?? sheet.template?.timerSeconds ?? Exercise.defaultTimerSeconds)
         // Una categoria di un altro modello (la scheda ha cambiato modello) non vale più.

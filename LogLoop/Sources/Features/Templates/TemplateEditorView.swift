@@ -62,9 +62,12 @@ private struct TemplateEditorView: View {
             }
 
             Section {
-                DurationRow(title: "Tempo timer", seconds: $template.timerSeconds)
+                Toggle("Attivo di default", isOn: $template.timerEnabledByDefault)
+                DurationRow(title: "Tempo", seconds: $template.timerSeconds)
+            } header: {
+                Text("Timer")
             } footer: {
-                Text("Il tempo proposto agli esercizi con il timer.")
+                Text("Se attivo, gli esercizi nuovi delle schede hanno già il timer, con questo tempo.")
             }
 
             categoriesSection

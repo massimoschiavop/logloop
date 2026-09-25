@@ -38,12 +38,16 @@ final class Sheet: Sortable {
         self.createdAt = Date()
     }
 
-    /// Gli esercizi mostrati nel giorno scelto, in ordine: senza giorni tutti, con i giorni
-    /// quelli del giorno più quelli validi per tutti (creati quando la scheda non li aveva).
-    func exercises(on day: Weekday?) -> [Exercise] {
-        let all = exercisesStorage.sortedByIndex()
-        guard showsDays, let day else { return all }
-        return all.filter { $0.weekday == nil || $0.weekday == day }
+    /// Gli esercizi mostrati nella settimana e nel giorno scelti, in ordine. Con i giorni ci
+    /// sono quelli del giorno più quelli validi per tutti (creati quando la scheda non li
+    /// aveva); con le settimane quelli della settimana, e nella prima anche quelli creati
+    /// quando la scheda non le aveva.
+    func exercises(week: Int, day: Weekday?) -> [Exercise] {
+        exercisesStorage.sortedByIndex().filter { exercise in
+            let inWeek = !showsWeeks || (exercise.week ?? 1) == week
+            let inDay = !showsDays || day == nil || exercise.weekday == nil || exercise.weekday == day
+            return inWeek && inDay
+        }
     }
 
     /// Una copia della scheda sullo stesso modello, non ancora inserita in alcun contesto.

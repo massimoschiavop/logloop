@@ -24,6 +24,8 @@ final class Template: Sortable {
     var sortIndex: Int = 0
     /// Tempo proposto agli esercizi con il timer.
     var timerSeconds: Int = Exercise.defaultTimerSeconds
+    /// Se gli esercizi nuovi delle schede nascono col timer attivo.
+    var timerEnabledByDefault: Bool = false
 
     /// Relazioni non ordinate come le salva SwiftData: per l'ordine dell'utente usare
     /// `categories` e `fields`.
@@ -62,6 +64,7 @@ final class Template: Sortable {
             sortIndex: sortIndex
         )
         copy.timerSeconds = timerSeconds
+        copy.timerEnabledByDefault = timerEnabledByDefault
         copy.categoriesStorage = categories.map { $0.copy() }
         copy.fieldsStorage = fields.map { $0.copy() }
         return copy
