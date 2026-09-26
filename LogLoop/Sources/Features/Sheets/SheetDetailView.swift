@@ -105,7 +105,13 @@ struct SheetDetailView: View {
         Set((sheet.template?.categories ?? []).map(\.identifier)).union([nil])
     }
 
-    private var isAllCollapsed: Bool { allCategoryKeys.isSubset(of: collapsed) }
+    /// Conta solo le categorie mostrate nella pagina: "Senza categoria" c'è solo se serve, e
+    /// chiudendo a mano tutte le altre il menu deve già proporre di espanderle.
+    private var isAllCollapsed: Bool {
+        let page = currentPage
+        return groups(of: sheet.activities(week: page.week, day: page.day))
+            .allSatisfy { collapsed.contains($0.category?.identifier) }
+    }
 
     /// Tutte le pagine in fila, giorno dopo giorno e settimana dopo settimana.
     private var pages: [Page] {

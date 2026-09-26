@@ -53,18 +53,10 @@ struct ConfirmButton: View {
 
 extension View {
     /// La x grigia in fondo al campo di testo, per svuotarlo con un tocco come nei campi di
-    /// sistema; compare solo quando il campo non è vuoto.
-    func clearButton(text: Binding<String>) -> some View {
-        HStack {
-            self
-            if !text.wrappedValue.isEmpty {
-                Button("Svuota", systemImage: "xmark.circle.fill") { text.wrappedValue = "" }
-                    .labelStyle(.iconOnly)
-                    // Senza bordi, così nel Form il tocco resta sul pulsante e non sulla riga.
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(Color(.tertiaryLabel))
-            }
-        }
+    /// sistema; compare solo quando il campo non è vuoto. Svuotato, il campo resta attivo per
+    /// scrivere subito altro. Se il focus del campo serve anche fuori, lo si passa in `focus`.
+    func clearButton(text: Binding<String>, focus: FocusState<Bool>.Binding? = nil) -> some View {
+        modifier(ClearButtonModifier(text: text, externalFocus: focus))
     }
 
     /// Eliminazione con lo swipe tramite il pulsante Elimina di sistema.
@@ -81,6 +73,30 @@ extension View {
             ToolbarItem(placement: .confirmationAction) {
                 ConfirmButton(action: action)
                     .disabled(!isEnabled)
+            }
+        }
+    }
+}
+
+private struct ClearButtonModifier: ViewModifier {
+    @Binding var text: String
+    let externalFocus: FocusState<Bool>.Binding?
+    @FocusState private var ownFocus: Bool
+
+    func body(content: Content) -> some View {
+        let isFocused = externalFocus ?? $ownFocus
+        HStack {
+            content
+                .focused(isFocused)
+            if !text.isEmpty {
+                Button("Svuota", systemImage: "xmark.circle.fill") {
+                    text = ""
+                    isFocused.wrappedValue = true
+                }
+                .labelStyle(.iconOnly)
+                // Senza bordi, così nel Form il tocco resta sul pulsante e non sulla riga.
+                .buttonStyle(.borderless)
+                .foregroundStyle(Color(.tertiaryLabel))
             }
         }
     }

@@ -35,9 +35,8 @@ struct SheetEditorView: View {
         Form {
             Section("Titolo") {
                 TextField("Es. Studio pianoforte", text: $title)
-                    .focused($isTitleFocused)
                     .submitLabel(.done)
-                    .clearButton(text: $title)
+                    .clearButton(text: $title, focus: $isTitleFocused)
             }
 
             Section {
