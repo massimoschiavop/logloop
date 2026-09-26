@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// L'intestazione in alto: da iOS 26 le pastiglie di vetro galleggiano sulle attività con la
-/// sfumatura di sistema, prima stanno su una barra traslucida.
+/// L'intestazione in alto: da iOS 26 galleggia sulle attività con la sfumatura di sistema,
+/// prima sta su una barra traslucida.
 struct HeaderBar<Header: View>: ViewModifier {
     let isVisible: Bool
     @ViewBuilder let header: () -> Header
@@ -19,85 +19,52 @@ struct HeaderBar<Header: View>: ViewModifier {
     }
 }
 
-/// Una fila di pastiglie; col vetro le raggruppa perché si fondano quando cambia la scelta.
-struct ChipRow<Content: View>: View {
-    @ViewBuilder let content: () -> Content
-
-    var body: some View {
-        if #available(iOS 26, *) {
-            GlassEffectContainer(spacing: 4) {
-                HStack(spacing: 8, content: content)
-            }
-        } else {
-            HStack(spacing: 8, content: content)
-        }
-    }
-}
-
-/// Pastiglia selezionabile dell'intestazione, piena quando è scelta. Col doppio tocco si
-/// disattiva: sbiadita e barrata, non si sceglie più finché non la si riattiva allo stesso modo.
-struct SelectorChip: View {
-    let title: String
+/// Un giorno della striscia in alto: il nome in un cerchio, pieno se è il giorno scelto e
+/// tratteggiato se è disattivato, e sotto un pallino se ha delle attività. Col doppio tocco
+/// si disattiva o si riattiva.
+struct DayCell: View {
+    let day: Weekday
     let isSelected: Bool
     let isDisabled: Bool
-    let glassID: ChipGlassID
+    let hasActivities: Bool
+    /// Lega il cerchio pieno, che scivola dal giorno scelto prima a quello nuovo.
     let namespace: Namespace.ID
-    let action: () -> Void
-    let onDoubleTap: () -> Void
+    let onSelect: () -> Void
+    let onToggle: () -> Void
 
     var body: some View {
-        Text(title)
-            .font(.subheadline.weight(.semibold))
-            .strikethrough(isDisabled)
-            .foregroundStyle(isSelected ? Color.white : isDisabled ? Color(.tertiaryLabel) : Color.primary)
-            .frame(minWidth: 34, minHeight: 34)
-            .padding(.horizontal, 4)
-            .modifier(ChipBackground(isSelected: isSelected, glassID: glassID, namespace: namespace))
-            .contentShape(Capsule())
-            // Il tocco singolo scatta subito, senza aspettare un eventuale secondo; il doppio
-            // tocco è riconosciuto insieme.
-            .onTapGesture {
-                if !isDisabled { action() }
-            }
-            .simultaneousGesture(TapGesture(count: 2).onEnded(onDoubleTap))
-            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-            .accessibilityValue(isDisabled ? "Disattivato" : "")
-            .accessibilityAction(named: isDisabled ? "Riattiva" : "Disattiva", onDoubleTap)
-    }
-}
-
-/// Identifica il vetro di ogni pastiglia; quelle scelte condividono quello della loro fila.
-enum ChipGlassID: Hashable {
-    case week(Int)
-    case day(Weekday)
-    case selectedWeek
-    case selectedDay
-
-    var selection: Self {
-        switch self {
-        case .week, .selectedWeek: .selectedWeek
-        case .day, .selectedDay: .selectedDay
+        VStack(spacing: 4) {
+            Text(day.shortName)
+                .font(.footnote.weight(.semibold))
+                .strikethrough(isDisabled && !isSelected)
+                .foregroundStyle(isSelected ? Color.white : isDisabled ? Color(.tertiaryLabel) : Color.primary)
+                .frame(width: 40, height: 40)
+                .background {
+                    if isSelected {
+                        Circle()
+                            .fill(isDisabled ? Color(.systemGray) : Color.accentColor)
+                            .matchedGeometryEffect(id: "selectedDay", in: namespace)
+                    } else if isDisabled {
+                        Circle()
+                            .strokeBorder(Color(.tertiaryLabel), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    }
+                }
+            Circle()
+                .fill(isSelected ? Color.accentColor : Color(.tertiaryLabel))
+                .frame(width: 5, height: 5)
+                .opacity(hasActivities && !isDisabled ? 1 : 0)
         }
-    }
-}
-
-/// Vetro colorato con l'accento per la pastiglia scelta, vetro semplice per le altre.
-private struct ChipBackground: ViewModifier {
-    let isSelected: Bool
-    let glassID: ChipGlassID
-    let namespace: Namespace.ID
-
-    func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content.glassEffect(
-                isSelected ? .regular.tint(.accentColor).interactive() : .regular.interactive(),
-                in: .capsule
-            )
-            // La scelta ha un solo vetro per fila, che al cambio si trasforma passando
-            // dalla pastiglia vecchia alla nuova.
-            .glassEffectID(isSelected ? glassID.selection : glassID, in: namespace)
-        } else {
-            content.background(Capsule().fill(isSelected ? Color.accentColor : Color(.tertiarySystemFill)))
-        }
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        // Il tocco singolo scatta subito, senza aspettare un eventuale secondo: il doppio tocco
+        // porta sul giorno e poi lo disattiva o riattiva.
+        .onTapGesture(perform: onSelect)
+        .simultaneousGesture(TapGesture(count: 2).onEnded(onToggle))
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel(day.name)
+        .accessibilityValue(isDisabled ? "Disattivato" : hasActivities ? "Con attività" : "")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityAction(named: isDisabled ? "Riattiva" : "Disattiva", onToggle)
     }
 }

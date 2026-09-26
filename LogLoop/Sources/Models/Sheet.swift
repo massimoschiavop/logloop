@@ -19,8 +19,8 @@ final class Sheet: Sortable {
     /// Se la scheda mostra i giorni, e quali: maschera di bit su `Weekday`.
     var showsDays: Bool = false
     var weekdayMask: Int = Weekday.allMask
-    /// Settimane e giorni disattivati col doppio tocco: restano nell'intestazione ma le loro
-    /// pagine non si mostrano. I giorni valgono per la sola settimana in cui si disattivano:
+    /// Settimane e giorni disattivati dall'intestazione: le loro pagine dicono solo che
+    /// sono disattivati. I giorni valgono per la sola settimana in cui si disattivano:
     /// una maschera di bit su `Weekday` per settimana, dalla prima; senza settimane conta la
     /// prima. Le settimane oltre la fine dell'elenco non hanno giorni disattivati.
     var disabledWeeks: [Int] = []
@@ -67,6 +67,12 @@ final class Sheet: Sortable {
         if masks.count < week { masks += Array(repeating: 0, count: week - masks.count) }
         masks[week - 1] ^= day.bit
         disabledWeekdayMasks = masks
+    }
+
+    /// Riattiva tutti i giorni della settimana indicata.
+    func enableAllWeekdays(week: Int) {
+        guard disabledWeekdayMasks.indices.contains(week - 1) else { return }
+        disabledWeekdayMasks[week - 1] = 0
     }
 
     /// Una copia della scheda sullo stesso modello, non ancora inserita in alcun contesto; il

@@ -24,6 +24,9 @@ enum Weekday: Int, CaseIterable, Identifiable {
     /// L'iniziale mostrata nei pallini.
     var initial: String { String(name.prefix(1)) }
 
+    /// Le prime tre lettere, es. "Mer".
+    var shortName: String { String(name.prefix(3)) }
+
     var bit: Int { 1 << rawValue }
 
     static func set(fromMask mask: Int) -> Set<Weekday> {

@@ -109,3 +109,25 @@ struct ActivityRow: View {
         .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
     }
 }
+
+/// La pagina di una settimana o di un giorno disattivato: lo dice, rassicura che le attività
+/// restano, e lo riattiva.
+struct DisabledPage: View {
+    let title: String
+    let message: String
+    let onEnable: () -> Void
+
+    var body: some View {
+        ContentUnavailableView {
+            Label(title, systemImage: "moon.zzz")
+        } description: {
+            Text(message)
+        } actions: {
+            Button("Riattiva", action: onEnable)
+                .buttonStyle(.bordered)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Come lo sfondo delle liste delle altre pagine.
+        .background(Color(.systemGroupedBackground))
+    }
+}

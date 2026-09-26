@@ -1,8 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// Le attività di una scheda. In alto, se la scheda li prevede, si scelgono la settimana
-/// e il giorno a cui si riferiscono.
+/// Le attività di una scheda. Se la scheda li prevede, in alto si scelgono la settimana e,
+/// da una striscia come quella del Calendario, il giorno.
 struct SheetDetailView: View {
     /// Chiave in cui è salvata l'ultima pagina guardata in ogni scheda, da cui la scheda
     /// riparte. Sta fuori dal database perché scorrere le pagine non diventi una modifica da
@@ -15,19 +15,15 @@ struct SheetDetailView: View {
     /// Partono dall'ultima pagina guardata nella scheda.
     @State private var selectedWeek: Int
     @State private var selectedDay: Weekday
-    /// Settimana e giorno mostrati prima dell'ultimo tocco su una pastiglia: il doppio tocco
-    /// che la disattiva ci riporta lì, annullando lo spostamento del primo tocco.
-    @State private var weekBeforeTap: Int?
-    @State private var dayBeforeTap: Weekday?
-    /// La pagina a cui è arrivato lo scorrimento; la scelta la segue e, al tocco delle
-    /// pastiglie, la guida (vedi `follow(_:)`).
+    /// La pagina a cui è arrivato lo scorrimento; la scelta la segue e, scegliendo dal menu o
+    /// dai giorni, la guida (vedi `follow(_:)`).
     @State private var scrolledPage: Page?
-    /// Lega il vetro delle pastiglie scelte, che scivola da una all'altra.
-    @Namespace private var chipGlass
     /// La sezione in cui si sta scrivendo un'attività nuova, e il suo nome.
     @State private var adding: AddTarget?
     @State private var newName = ""
     @FocusState private var isNewNameFocused: Bool
+    /// Lega il cerchio del giorno scelto, che scivola da un giorno all'altro.
+    @Namespace private var daySelection
     /// Le categorie compresse, per identificativo (nullo per "Senza categoria"); valgono per
     /// tutte le pagine.
     @State private var collapsed: Set<UUID?> = []
@@ -71,15 +67,15 @@ struct SheetDetailView: View {
 
     private var weekCount: Int { sheet.showsWeeks ? sheet.weekCount : 1 }
 
-    /// Le settimane e i giorni non disattivati, gli unici con una pagina. Se lo fossero tutti
-    /// (es. dopo aver tolto settimane dall'editor) valgono tutti. I giorni sono quelli della
-    /// settimana mostrata.
+    /// Le settimane e i giorni non disattivati. Anche quelli disattivati hanno una pagina, che
+    /// dice solo che lo sono; una settimana disattivata ne ha una sola. Se lo fossero tutti
+    /// (es. dopo aver tolto settimane dall'editor) valgono tutti. I giorni valgono per una
+    /// sola settimana.
     private var enabledWeeks: [Int] {
         let all = Array(1...weekCount)
         let enabled = sheet.showsWeeks ? all.filter { !sheet.disabledWeeks.contains($0) } : all
         return enabled.isEmpty ? all : enabled
     }
-    private var enabledDays: [Weekday] { enabledDays(week: currentWeek) }
 
     private func enabledDays(week: Int) -> [Weekday] {
         let mask = sheet.disabledWeekdayMask(week: week)
@@ -87,13 +83,21 @@ struct SheetDetailView: View {
         return enabled.isEmpty ? days : enabled
     }
 
-    /// Settimana e giorno scelti o, se non ci sono più o sono disattivati, i primi attivi dopo
-    /// di loro: per la settimana altrimenti l'ultima, per il giorno si riparte da lunedì.
+    private func isDisabled(week: Int) -> Bool {
+        !enabledWeeks.contains(week)
+    }
+
+    private func isDisabled(_ day: Weekday, week: Int) -> Bool {
+        !enabledDays(week: week).contains(day)
+    }
+
+    /// Settimana e giorno scelti o, se non ci sono più, per la settimana l'ultima e per il
+    /// giorno il primo dopo, ripartendo da lunedì.
     private var currentWeek: Int {
-        enabledWeeks.first { $0 >= selectedWeek } ?? enabledWeeks.last ?? 1
+        min(max(selectedWeek, 1), weekCount)
     }
     private var currentDay: Weekday? {
-        enabledDays.first { $0.rawValue >= selectedDay.rawValue } ?? enabledDays.first
+        days.first { $0.rawValue >= selectedDay.rawValue } ?? days.first
     }
 
     /// Le chiavi di `collapsed` per ogni categoria, compresa "Senza categoria".
@@ -103,17 +107,22 @@ struct SheetDetailView: View {
 
     private var isAllCollapsed: Bool { allCategoryKeys.isSubset(of: collapsed) }
 
-    /// Tutte le pagine attive in fila, giorno dopo giorno e settimana dopo settimana.
+    /// Tutte le pagine in fila, giorno dopo giorno e settimana dopo settimana.
     private var pages: [Page] {
-        enabledWeeks.flatMap { week in
-            (sheet.showsDays && !days.isEmpty ? enabledDays(week: week).map(Optional.some) : [nil])
+        (1...weekCount).flatMap { week in
+            (hasDayPages(week: week) ? days.map(Optional.some) : [nil])
                 .map { Page(week: week, day: $0) }
         }
     }
 
+    /// Se la settimana ha una pagina per giorno: no se la scheda non li ha o se è disattivata.
+    private func hasDayPages(week: Int) -> Bool {
+        sheet.showsDays && !days.isEmpty && !isDisabled(week: week)
+    }
+
     /// La pagina di settimana e giorno scelti.
     private var currentPage: Page {
-        Page(week: currentWeek, day: sheet.showsDays ? currentDay : nil)
+        Page(week: currentWeek, day: hasDayPages(week: currentWeek) ? currentDay : nil)
     }
 
     /// Porta la scelta sulla pagina a cui si è scorsi. Ignora le pagine appena disattivate,
@@ -121,7 +130,7 @@ struct SheetDetailView: View {
     /// all'infinito tra la pagina segnalata e quella scelta, bloccando l'app.
     private func follow(_ page: Page?) {
         guard let page, page != currentPage, pages.contains(page) else { return }
-        // Animato, perché anche scorrendo il vetro della scelta scivoli sulla pastiglia nuova.
+        // Animato, perché anche scorrendo la scelta dei giorni scivoli su quello nuovo.
         withAnimation(.snappy) {
             selectedWeek = page.week
             if let day = page.day { selectedDay = day }
@@ -143,8 +152,22 @@ struct SheetDetailView: View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 0) {
                 ForEach(pages) { page in
-                    pageContent(for: page)
-                        .containerRelativeFrame(.horizontal)
+                    Group {
+                        if isDisabled(week: page.week) {
+                            DisabledPage(
+                                title: "Settimana \(page.week) disattivata",
+                                message: "Le sue attività restano salvate e tornano quando la riattivi."
+                            ) { toggleWeek(page.week) }
+                        } else if let day = page.day, isDisabled(day, week: page.week) {
+                            DisabledPage(
+                                title: "\(day.name) disattivato",
+                                message: "Le sue attività restano salvate e tornano quando lo riattivi."
+                            ) { toggleDay(day, week: page.week) }
+                        } else {
+                            pageContent(for: page)
+                        }
+                    }
+                    .containerRelativeFrame(.horizontal)
                 }
             }
             .scrollTargetLayout()
@@ -159,12 +182,14 @@ struct SheetDetailView: View {
         .onChange(of: scrolledPage) { follow(scrolledPage) }
         .onChange(of: currentPage) {
             rememberPage(currentPage)
-            // Scelta dalle pastiglie: le pagine scorrono fin lì.
+            // Scelta dal menu o dai giorni: le pagine scorrono fin lì.
             guard scrolledPage != currentPage else { return }
             withAnimation(.snappy(duration: 0.3)) { scrolledPage = currentPage }
         }
         .background(ContentPopGestureDisabler())
-        .modifier(HeaderBar(isVisible: sheet.showsWeeks || sheet.showsDays) { header })
+        .modifier(HeaderBar(isVisible: sheet.showsWeeks || (sheet.showsDays && !days.isEmpty)) { header })
+        // Un tocco leggero a ogni cambio di pagina, anche scorrendo.
+        .sensoryFeedback(.selection, trigger: currentPage)
         .sheet(item: $editingActivity) { activity in
             NavigationStack {
                 ActivityEditorView(sheet: sheet, activity: activity)
@@ -403,15 +428,14 @@ struct SheetDetailView: View {
 
     /// Passa a un'altra settimana o giorno facendo scorrere le pagine.
     private func select(week: Int? = nil, day: Weekday? = nil) {
-        if week != nil { weekBeforeTap = currentWeek }
-        if day != nil { dayBeforeTap = currentDay }
         withAnimation(.snappy(duration: 0.3)) {
             if let week { selectedWeek = week }
             if let day { selectedDay = day }
         }
     }
 
-    /// Disattiva una settimana, o la riattiva se lo era; l'ultima attiva resta tale.
+    /// Disattiva una settimana, o la riattiva se lo era; l'ultima attiva resta tale. La pagina
+    /// resta dov'è, e la settimana disattivata mostra solo che lo è.
     private func toggleWeek(_ week: Int) {
         guard sheet.disabledWeeks.contains(week) || enabledWeeks.count > 1 else { return }
         withAnimation(.snappy(duration: 0.3)) {
@@ -419,27 +443,30 @@ struct SheetDetailView: View {
                 sheet.disabledWeeks.removeAll { $0 == week }
             } else {
                 sheet.disabledWeeks.append(week)
-                if let weekBeforeTap, enabledWeeks.contains(weekBeforeTap) { selectedWeek = weekBeforeTap }
             }
-            // Resta sulla pagina mostrata, anche riattivando quella scelta prima.
-            selectedWeek = currentWeek
         }
         context.nameUndo(sheet.disabledWeeks.contains(week) ? "Disattivazione Settimana" : "Riattivazione Settimana")
-        weekBeforeTap = nil
     }
 
-    /// Come `toggleWeek(_:)`, per un giorno della sola settimana mostrata.
-    private func toggleDay(_ day: Weekday) {
-        let week = currentWeek
+    /// Come `toggleWeek(_:)`, per un giorno della sola settimana indicata. La pagina resta dov'è,
+    /// e il giorno disattivato mostra solo che lo è. Disattivando l'ultimo giorno attivo si
+    /// disattiva la settimana, che riattivata riparte con tutti i giorni; se è l'ultima attiva,
+    /// o la scheda non ha settimane, il giorno resta attivo.
+    private func toggleDay(_ day: Weekday, week: Int) {
         let isDisabled = sheet.disabledWeekdayMask(week: week) & day.bit != 0
-        guard isDisabled || enabledDays.count > 1 else { return }
+        if !isDisabled && enabledDays(week: week).count == 1 {
+            guard sheet.showsWeeks, !sheet.disabledWeeks.contains(week), enabledWeeks.count > 1 else { return }
+            withAnimation(.snappy(duration: 0.3)) {
+                sheet.enableAllWeekdays(week: week)
+                sheet.disabledWeeks.append(week)
+            }
+            context.nameUndo("Disattivazione Settimana")
+            return
+        }
         withAnimation(.snappy(duration: 0.3)) {
             sheet.toggleWeekday(day, week: week)
-            if !isDisabled, let dayBeforeTap, enabledDays.contains(dayBeforeTap) { selectedDay = dayBeforeTap }
-            if let currentDay { selectedDay = currentDay }
         }
         context.nameUndo(isDisabled ? "Riattivazione Giorno" : "Disattivazione Giorno")
-        dayBeforeTap = nil
     }
 
     /// Sposta un'attività trascinata prima di `next`, o dopo `last` se `next` è nullo, e le
@@ -483,76 +510,85 @@ struct SheetDetailView: View {
         context.nameUndo("Eliminazione Attività")
     }
 
+    /// La settimana, e sotto la striscia dei giorni.
     private var header: some View {
         VStack(spacing: 10) {
-            // Stacca le pastiglie dalla barra di navigazione, come tra settimane e giorni.
-            Divider()
-                .padding(.horizontal)
-                .padding(.vertical, 2)
             if sheet.showsWeeks {
-                // Centrate quando ci stanno, altrimenti scorrono in orizzontale.
-                ViewThatFits(in: .horizontal) {
-                    weekChips
-                        .padding(.horizontal)
-                    ScrollViewReader { proxy in
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            weekChips
-                                .padding(.horizontal)
-                        }
-                        .onAppear { proxy.scrollTo(currentWeek, anchor: .center) }
-                        .onChange(of: currentWeek) {
-                            withAnimation { proxy.scrollTo(currentWeek, anchor: .center) }
-                        }
-                    }
-                }
+                weekBar
             }
-            if sheet.showsWeeks && sheet.showsDays {
-                Divider()
-                    .padding(.horizontal)
-                    .padding(.vertical, 2)
-            }
-            if sheet.showsDays {
-                ChipRow {
+            if sheet.showsDays && !days.isEmpty {
+                HStack(spacing: 0) {
                     ForEach(days) { day in
-                        SelectorChip(
-                            title: day.initial,
-                            isSelected: day == currentDay,
-                            isDisabled: !enabledDays.contains(day),
-                            glassID: .day(day),
-                            namespace: chipGlass
+                        DayCell(
+                            day: day,
+                            isSelected: hasDayPages(week: currentWeek) && day == currentDay,
+                            isDisabled: isDisabled(week: currentWeek) || isDisabled(day, week: currentWeek),
+                            hasActivities: !sheet.activities(week: currentWeek, day: day).isEmpty,
+                            namespace: daySelection
                         ) {
                             select(day: day)
-                        } onDoubleTap: {
-                            toggleDay(day)
+                        } onToggle: {
+                            toggleDay(day, week: currentWeek)
                         }
-                        .accessibilityLabel(day.name)
+                        // In una settimana disattivata non c'è un giorno da scegliere.
+                        .disabled(isDisabled(week: currentWeek))
                     }
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 8)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .background(.bar)
+        .padding(.vertical, 8)
     }
 
-    private var weekChips: some View {
-        ChipRow {
-            ForEach(1...sheet.weekCount, id: \.self) { week in
-                SelectorChip(
-                    title: "S\(week)",
-                    isSelected: week == currentWeek,
-                    isDisabled: !enabledWeeks.contains(week),
-                    glassID: .week(week),
-                    namespace: chipGlass
-                ) {
-                    select(week: week)
-                } onDoubleTap: {
-                    toggleWeek(week)
-                }
-                .id(week)
-                .accessibilityLabel("Settimana \(week)")
+    /// "Settimana 2 di 4": toccandolo si apre il menu della settimana.
+    private var weekBar: some View {
+        Menu {
+            weekMenuItems
+        } label: {
+            HStack(spacing: 4) {
+                Text("Settimana \(currentWeek)")
+                    .foregroundStyle(isDisabled(week: currentWeek) ? .secondary : .primary)
+                    .strikethrough(isDisabled(week: currentWeek))
+                    .contentTransition(.numericText(value: Double(currentWeek)))
+                Text("di \(sheet.weekCount)")
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.down")
+                    .imageScale(.small)
+                    .foregroundStyle(.secondary)
             }
+            .font(.subheadline.weight(.semibold))
+        }
+        .accessibilityLabel("Settimana \(currentWeek) di \(sheet.weekCount)")
+        .accessibilityValue(isDisabled(week: currentWeek) ? "Disattivata" : "")
+        // Con VoiceOver si passa alle settimane vicine scorrendo in su o in giù.
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment where currentWeek < sheet.weekCount: select(week: currentWeek + 1)
+            case .decrement where currentWeek > 1: select(week: currentWeek - 1)
+            default: break
+            }
+        }
+    }
+
+    /// Il menu della settimana: la sceglie, e disattiva o riattiva quella mostrata. Le settimane
+    /// disattivate hanno accanto la luna.
+    @ViewBuilder private var weekMenuItems: some View {
+        Picker("Settimana", selection: Binding(get: { currentWeek }, set: { select(week: $0) })) {
+            ForEach(1...sheet.weekCount, id: \.self) { week in
+                if isDisabled(week: week) {
+                    Label("Settimana \(week)", systemImage: "moon.zzz").tag(week)
+                } else {
+                    Text("Settimana \(week)").tag(week)
+                }
+            }
+        }
+        Divider()
+        if isDisabled(week: currentWeek) {
+            Button("Riattiva settimana", systemImage: "sun.max") { toggleWeek(currentWeek) }
+        } else {
+            Button("Disattiva settimana", systemImage: "moon.zzz") { toggleWeek(currentWeek) }
+                // L'ultima attiva non si spegne.
+                .disabled(enabledWeeks.count == 1)
         }
     }
 }
