@@ -265,7 +265,18 @@ run_action() {
     print -P "   %K{red}%F{black}%B INTERROTTO %b%f%k"
   fi
   print
-  read -s -k 1 "?   Premi un tasto per tornare al menu…" || true
+  # Se va a buon fine si torna al menu da soli dopo 5 secondi; se fallisce si aspetta
+  # un tasto, così c'è tempo di leggere l'errore.
+  if (( code == 0 )); then
+    local seconds
+    for seconds in {5..1}; do
+      print -Pn "\r   Torno al menu tra %B$seconds%b s… %F{242}(un tasto per tornare subito)%f "
+      read -s -k 1 -t 1 && break
+    done
+    print
+  else
+    read -s -k 1 "?   Premi un tasto per tornare al menu…" || true
+  fi
 }
 
 # Ctrl+C al prompt del menu non chiude lo script.
