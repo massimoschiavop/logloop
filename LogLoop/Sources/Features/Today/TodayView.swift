@@ -189,19 +189,22 @@ struct TodayView: View {
             // Sopra i mesi, che ci scorrono sotto.
             .zIndex(1)
 
-            // Il mese prima, quello mostrato e quello dopo, uno sotto l'altro: il dito li trascina
+            // I mesi prima, quello mostrato e quello dopo, uno sotto l'altro: il dito li trascina
             // in su e in giù e, lasciati, il più vicino si porta in posizione, come nel Calendario.
             Color.clear
                 .frame(height: calendar.monthHeight(heightMonth))
                 .overlay(alignment: .top) {
-                    let pages = [-1, 0, 1].map { calendar.adding(months: $0, to: month) }
+                    // Due mesi prima: tornando indietro, sotto le iniziali trasparenti c'è già il
+                    // mese che entra, e quello nuovo si prepara fuori dallo schermo.
+                    let pages = [-2, -1, 0, 1].map { calendar.adding(months: $0, to: month) }
                     let colors = dayColorCache
+                    let above = pages.prefix(2).reduce(0) { $0 + calendar.monthHeight($1) + Self.gapHeight }
                     VStack(spacing: 0) {
                         ForEach(pages, id: \.self) { page in
                             monthPage(page, colors: colors)
                         }
                     }
-                    .offset(y: -(calendar.monthHeight(calendar.adding(months: -1, to: month)) + 2 * Self.gapHeight) + dragOffset)
+                    .offset(y: -(above + Self.gapHeight) + dragOffset)
                 }
                 // Tagliati solo in basso: in alto continuano sotto le iniziali.
                 .clipShape(OpenTopRectangle())
@@ -615,20 +618,19 @@ private struct DateCell: View {
     }
 }
 
-/// Il fondo del nome del mese e delle iniziali: il Liquid Glass di sistema, che lascia
-/// intravedere i mesi che ci passano sotto, scurito dal colore della pagina, e segue le impostazioni di accessibilità come Riduci
-/// trasparenza; prima di iOS 26 un materiale sottile.
+/// Il fondo del nome del mese e delle iniziali: il Liquid Glass di sistema, tinto del colore
+/// della pagina per restare scuro come nel Calendario, con i mesi che ci passano sotto che si
+/// intravedono. Segue le impostazioni di accessibilità come Riduci trasparenza; prima di iOS 26
+/// un materiale sottile.
 private struct HeaderGlass: View {
     var body: some View {
         if #available(iOS 26, *) {
             Rectangle()
                 .fill(.clear)
-                .glassEffect(.regular, in: Rectangle())
-                .overlay(Color(.systemBackground).opacity(0.5))
+                .glassEffect(.regular.tint(Color(.systemBackground).opacity(0.2)), in: Rectangle())
         } else {
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .overlay(Color(.systemBackground).opacity(0.5))
         }
     }
 }
