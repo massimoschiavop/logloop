@@ -42,6 +42,8 @@ final class FieldDefinition: Sortable {
 
 enum FieldKind: String, CaseIterable, Identifiable {
     case text
+    /// Testo su più righe, es. delle note.
+    case textArea
     case number
     case selection
 
@@ -50,6 +52,7 @@ enum FieldKind: String, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .text: "Testo"
+        case .textArea: "Area di testo"
         case .number: "Numero"
         case .selection: "Lista"
         }
@@ -58,6 +61,7 @@ enum FieldKind: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .text: "textformat"
+        case .textArea: "text.alignleft"
         case .number: "number"
         case .selection: "list.bullet"
         }

@@ -51,6 +51,25 @@ struct ConfirmButton: View {
     }
 }
 
+/// Pulsante di chiusura di sistema (la x): da iOS 26 lo fornisce iOS in base al ruolo;
+/// prima si ripiega sul simbolo xmark.
+struct CloseButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Group {
+            if #available(iOS 26, *) {
+                Button(role: .close, action: action)
+            } else {
+                Button(action: action) {
+                    Label("Chiudi", systemImage: "xmark")
+                }
+            }
+        }
+        .labelStyle(.iconOnly)
+    }
+}
+
 extension View {
     /// La x grigia in fondo al campo di testo, per svuotarlo con un tocco come nei campi di
     /// sistema; compare solo quando il campo non è vuoto. Svuotato, il campo resta attivo per

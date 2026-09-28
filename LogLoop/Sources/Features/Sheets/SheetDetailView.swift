@@ -35,11 +35,12 @@ struct SheetDetailView: View {
     /// L'attività aperta nell'editor, in un foglio dal basso.
     @State private var editingActivity: Activity?
 
-    init(sheet: Sheet) {
+    /// Con `week` (e `day`) parte da quella pagina, altrimenti dall'ultima guardata.
+    init(sheet: Sheet, week: Int? = nil, day: Weekday? = nil) {
         self.sheet = sheet
         let last = Self.lastPages[Self.pageKey(of: sheet)] ?? []
-        _selectedWeek = State(initialValue: last.first ?? 1)
-        _selectedDay = State(initialValue: last.dropFirst().first.flatMap(Weekday.init(rawValue:)) ?? .monday)
+        _selectedWeek = State(initialValue: week ?? last.first ?? 1)
+        _selectedDay = State(initialValue: day ?? last.dropFirst().first.flatMap(Weekday.init(rawValue:)) ?? .monday)
     }
 
     /// Per ogni scheda la settimana e il giorno (`Weekday.rawValue`) dell'ultima pagina.
@@ -61,26 +62,17 @@ struct SheetDetailView: View {
     }
 
     /// I giorni della scheda nell'ordine della settimana.
-    private var days: [Weekday] {
-        Weekday.allCases.filter { sheet.weekdays.contains($0) }
-    }
+    private var days: [Weekday] { sheet.orderedWeekdays }
 
-    private var weekCount: Int { sheet.showsWeeks ? sheet.weekCount : 1 }
+    private var weekCount: Int { sheet.effectiveWeekCount }
 
     /// Le settimane e i giorni non disattivati. Anche quelli disattivati hanno una pagina, che
-    /// dice solo che lo sono; una settimana disattivata ne ha una sola. Se lo fossero tutti
-    /// (es. dopo aver tolto settimane dall'editor) valgono tutti. I giorni valgono per una
-    /// sola settimana.
-    private var enabledWeeks: [Int] {
-        let all = Array(1...weekCount)
-        let enabled = sheet.showsWeeks ? all.filter { !sheet.disabledWeeks.contains($0) } : all
-        return enabled.isEmpty ? all : enabled
-    }
+    /// dice solo che lo sono; una settimana disattivata ne ha una sola. I giorni valgono per
+    /// una sola settimana.
+    private var enabledWeeks: [Int] { sheet.enabledWeeks }
 
     private func enabledDays(week: Int) -> [Weekday] {
-        let mask = sheet.disabledWeekdayMask(week: week)
-        let enabled = days.filter { mask & $0.bit == 0 }
-        return enabled.isEmpty ? days : enabled
+        sheet.enabledWeekdays(week: week)
     }
 
     private func isDisabled(week: Int) -> Bool {
@@ -511,6 +503,8 @@ struct SheetDetailView: View {
     private func delete(_ activity: Activity) {
         let remaining = sheet.activitiesStorage.sortedByIndex()
             .filter { $0.identifier != activity.identifier }
+        // Le spunte prima dell'attività, per non eliminarle a cascata (vedi `SheetListView`).
+        activity.completions.forEach(context.delete)
         context.delete(activity)
         remaining.renumber()
         context.nameUndo("Eliminazione Attività")
@@ -529,6 +523,7 @@ struct SheetDetailView: View {
                             day: day,
                             isSelected: hasDayPages(week: currentWeek) && day == currentDay,
                             isDisabled: isDisabled(week: currentWeek) || isDisabled(day, week: currentWeek),
+                            isToday: todayPosition.map { $0.week == currentWeek && $0.day == day } ?? false,
                             hasActivities: !sheet.activities(week: currentWeek, day: day).isEmpty,
                             namespace: daySelection
                         ) {
@@ -546,6 +541,19 @@ struct SheetDetailView: View {
         .padding(.vertical, 8)
     }
 
+    /// Dove cade oggi nella scheda, se è programmata e oggi è in programma.
+    private var todayPosition: SchedulePosition? {
+        sheet.activeSchedule?.position(on: Date())
+    }
+
+    /// Le date della settimana nel giro in corso (o nel primo, prima dell'inizio), es. "6–12 ott".
+    private func scheduledDates(week: Int) -> String? {
+        guard let schedule = sheet.activeSchedule else { return nil }
+        let start = schedule.startOfWeek(week, cycle: todayPosition?.cycle ?? 1)
+        let end = Calendar.schedule.date(byAdding: .day, value: 6, to: start) ?? start
+        return (start..<end).formatted(.interval.day().month(.abbreviated))
+    }
+
     /// "Settimana 2 di 4": toccandolo si apre il menu della settimana.
     private var weekBar: some View {
         Menu {
@@ -558,6 +566,11 @@ struct SheetDetailView: View {
                     .contentTransition(.numericText(value: Double(currentWeek)))
                 Text("di \(sheet.weekCount)")
                     .foregroundStyle(.secondary)
+                if let dates = scheduledDates(week: currentWeek) {
+                    Text("· \(dates)")
+                        .foregroundStyle(.secondary)
+                        .fontWeight(.regular)
+                }
                 Image(systemName: "chevron.down")
                     .imageScale(.small)
                     .foregroundStyle(.secondary)

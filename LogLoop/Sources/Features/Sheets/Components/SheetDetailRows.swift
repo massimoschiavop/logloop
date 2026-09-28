@@ -74,19 +74,8 @@ struct ActivityRow: View {
     let activity: Activity
     let fields: [FieldDefinition]
 
-    /// I campi compilati nell'ordine del modello, es. "Metronomo 80 bpm".
-    private var details: String {
-        fields.compactMap { field in
-            let value = activity.value(for: field)
-            guard !value.isEmpty else { return nil }
-            let unit = field.kind == .number && !field.unit.isEmpty ? " \(field.unit)" : ""
-            return "\(field.name) \(value)\(unit)"
-        }
-        .joined(separator: " · ")
-    }
-
     var body: some View {
-        let details = self.details
+        let details = activity.details(fields: fields)
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(activity.name)

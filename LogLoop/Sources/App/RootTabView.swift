@@ -3,6 +3,8 @@ import SwiftUI
 struct RootTabView: View {
     /// L'annulla della finestra, a cui SwiftData registra le modifiche.
     @Environment(\.undoManager) private var undoManager
+    @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
     /// Cosa proporre scuotendo il telefono.
     @State private var shakePrompt: ShakePrompt?
     /// Vero se l'ultima cosa fatta scuotendo è stata annullare: allora si propone di ripristinare.
@@ -10,6 +12,8 @@ struct RootTabView: View {
 
     var body: some View {
         TabView {
+            TodayView()
+                .tabItem { Label("Oggi", systemImage: "calendar") }
             SheetListView()
                 .tabItem { Label("Schede", systemImage: "list.bullet.rectangle") }
             SettingsView()
@@ -17,6 +21,11 @@ struct RootTabView: View {
         }
         // Come in Note: al posto dell'avviso di sistema, "Annulla <azione>" con No e Sì.
         .onAppear { UIApplication.shared.applicationSupportsShakeToEdit = false }
+        // I promemoria si rifanno entrando e uscendo dall'app, così seguono le modifiche alle
+        // schede e coprono sempre i prossimi giorni.
+        .onChange(of: scenePhase, initial: true) {
+            if scenePhase != .inactive { ReminderScheduler.reschedule(in: context) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
             shakePrompt = prompt()
         }

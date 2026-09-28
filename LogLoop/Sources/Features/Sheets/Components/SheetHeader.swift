@@ -20,12 +20,14 @@ struct HeaderBar<Header: View>: ViewModifier {
 }
 
 /// Un giorno della striscia in alto: il nome in un cerchio, pieno se è il giorno scelto e
-/// tratteggiato se è disattivato, e sotto un pallino se ha delle attività. Col doppio tocco
+/// tratteggiato se è disattivato, colorato se è oggi, e sotto un pallino se ha delle attività. Col doppio tocco
 /// si disattiva o si riattiva.
 struct DayCell: View {
     let day: Weekday
     let isSelected: Bool
     let isDisabled: Bool
+    /// Se è oggi nella scheda programmata: il nome prende il colore dell'app.
+    var isToday = false
     let hasActivities: Bool
     /// Lega il cerchio pieno, che scivola dal giorno scelto prima a quello nuovo.
     let namespace: Namespace.ID
@@ -37,7 +39,7 @@ struct DayCell: View {
             Text(day.shortName)
                 .font(.footnote.weight(.semibold))
                 .strikethrough(isDisabled && !isSelected)
-                .foregroundStyle(isSelected ? Color.white : isDisabled ? Color(.tertiaryLabel) : Color.primary)
+                .foregroundStyle(isSelected ? Color.white : isDisabled ? Color(.tertiaryLabel) : isToday ? Color.accentColor : Color.primary)
                 .frame(width: 40, height: 40)
                 .background {
                     if isSelected {

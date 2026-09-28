@@ -31,6 +31,19 @@ final class Sheet: Sortable {
     @Relationship(deleteRule: .cascade, inverse: \Activity.sheet)
     var activitiesStorage: [Activity] = []
 
+    /// Le programmazioni sul calendario; al più una è attiva (vedi `activeSchedule`).
+    @Relationship(deleteRule: .cascade, inverse: \Schedule.sheet)
+    var schedules: [Schedule] = []
+
+    var activeSchedule: Schedule? {
+        schedules.first { $0.isActive }
+    }
+
+    /// Vero se la scheda è stata programmata o ha attività segnate come fatte o saltate.
+    var hasScheduleData: Bool {
+        !schedules.isEmpty || activitiesStorage.contains { !$0.completions.isEmpty }
+    }
+
     /// I giorni della scheda, da lunedì a domenica.
     var weekdays: Set<Weekday> {
         get { Weekday.set(fromMask: weekdayMask) }
@@ -42,6 +55,29 @@ final class Sheet: Sortable {
         self.template = template
         self.sortIndex = sortIndex
         self.createdAt = Date()
+    }
+
+    /// I giorni della scheda nell'ordine della settimana.
+    var orderedWeekdays: [Weekday] {
+        Weekday.allCases.filter { weekdays.contains($0) }
+    }
+
+    /// Le settimane mostrate: una sola se la scheda non le ha.
+    var effectiveWeekCount: Int { showsWeeks ? max(weekCount, 1) : 1 }
+
+    /// Le settimane non disattivate. Se lo fossero tutte (es. dopo aver tolto settimane
+    /// dall'editor) valgono tutte.
+    var enabledWeeks: [Int] {
+        let all = Array(1...effectiveWeekCount)
+        let enabled = showsWeeks ? all.filter { !disabledWeeks.contains($0) } : all
+        return enabled.isEmpty ? all : enabled
+    }
+
+    /// I giorni non disattivati nella settimana; se lo fossero tutti valgono tutti.
+    func enabledWeekdays(week: Int) -> [Weekday] {
+        let mask = disabledWeekdayMask(week: week)
+        let enabled = orderedWeekdays.filter { mask & $0.bit == 0 }
+        return enabled.isEmpty ? orderedWeekdays : enabled
     }
 
     /// Le attività mostrate nella settimana e nel giorno scelti, in ordine. Con i giorni ci
@@ -76,7 +112,7 @@ final class Sheet: Sortable {
     }
 
     /// Una copia della scheda sullo stesso modello, non ancora inserita in alcun contesto; il
-    /// titolo è il primo "(copia n)" libero tra `existingTitles`.
+    /// titolo è il primo "(copia n)" libero tra `existingTitles`. La copia non è programmata.
     func duplicate(sortIndex: Int, existingTitles: [String]) -> Sheet {
         let copy = Sheet(title: title.copyName(avoiding: existingTitles), template: template, sortIndex: sortIndex)
         copy.showsWeeks = showsWeeks

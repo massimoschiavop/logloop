@@ -14,7 +14,9 @@ enum Persistence {
         TemplateCategory.self,
         FieldDefinition.self,
         Sheet.self,
-        Activity.self
+        Activity.self,
+        Schedule.self,
+        ActivityCompletion.self
     ]
 
     static let schema = Schema(modelTypes)

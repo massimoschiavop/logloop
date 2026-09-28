@@ -22,6 +22,9 @@ final class Template: Sortable {
     var colorHex: String = Palette.defaultColor.hex
     var createdAt: Date = Date()
     var sortIndex: Int = 0
+    /// Quanti campi può avere al più un modello: di più non stanno sotto il timer della sessione.
+    static let maxFields = 4
+
     /// Tempo proposto alle attività con il timer.
     var timerSeconds: Int = Activity.defaultTimerSeconds
     /// Se le attività nuove delle schede nascono col timer attivo.
@@ -39,6 +42,10 @@ final class Template: Sortable {
     @Relationship(deleteRule: .nullify, inverse: \Sheet.template)
     var sheets: [Sheet] = []
 
+    /// Le attività sciolte con questo modello: eliminandolo diventano semplici.
+    @Relationship(deleteRule: .nullify, inverse: \Activity.template)
+    var looseActivities: [Activity] = []
+
     init(
         name: String,
         iconName: String = Template.defaultIcon,
@@ -54,6 +61,8 @@ final class Template: Sortable {
 
     var categories: [TemplateCategory] { categoriesStorage.sortedByIndex() }
     var fields: [FieldDefinition] { fieldsStorage.sortedByIndex() }
+
+    var canAddField: Bool { fieldsStorage.count < Template.maxFields }
 
     /// Una copia completa di categorie e campi, non ancora inserita in alcun contesto; il nome
     /// è il primo "(copia n)" libero tra `existingNames`.

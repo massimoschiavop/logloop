@@ -3,10 +3,12 @@ import SwiftData
 
 /// Strumenti del menu sviluppatore: svuotano l'app o la riempiono di dati di prova.
 enum DemoData {
-    /// Elimina tutti i dati salvati: modelli, schede e ciò che contengono.
+    /// Elimina tutti i dati salvati: modelli, schede e ciò che contengono, programmazioni comprese.
     static func eraseAll(in context: ModelContext) {
         // Prima ciò che è contenuto, poi schede e modelli: così nessuna eliminazione avviene a
         // cascata su oggetti mai caricati, che con l'annulla attivo manda SwiftData in crash.
+        deleteAll(ActivityCompletion.self, in: context)
+        deleteAll(Schedule.self, in: context)
         deleteAll(Activity.self, in: context)
         deleteAll(TemplateCategory.self, in: context)
         deleteAll(FieldDefinition.self, in: context)
@@ -14,10 +16,12 @@ enum DemoData {
         deleteAll(Template.self, in: context)
         context.nameUndo("Svuotamento dell'App")
         try? context.save()
+        ReminderScheduler.reschedule(in: context)
     }
 
-    /// Aggiunge in fondo ai dati esistenti tre modelli e alcune schede che coprono i casi
-    /// principali: con giorni, con settimane e giorni, senza nessuno dei due e vuota.
+    /// Aggiunge in fondo ai dati esistenti tre modelli, alcune schede che coprono i casi
+    /// principali (con giorni, con settimane e giorni, senza nessuno dei due e vuota) e alcune
+    /// attività sciolte.
     static func populate(in context: ModelContext) {
         let templateOffset = (try? context.fetchCount(FetchDescriptor<Template>())) ?? 0
         let sheetOffset = (try? context.fetchCount(FetchDescriptor<Sheet>())) ?? 0
@@ -37,8 +41,10 @@ enum DemoData {
             sheet.sortIndex = sheetOffset + offset
             context.insert(sheet)
         }
+        looseActivities(piano: piano, gym: gym).forEach(context.insert)
         context.nameUndo("Aggiunta dei Dati di Prova")
         try? context.save()
+        ReminderScheduler.reschedule(in: context)
     }
 
     private static func deleteAll<T: PersistentModel>(_ type: T.Type, in context: ModelContext) {
@@ -109,7 +115,7 @@ enum DemoData {
         ]
         template.fieldsStorage = [
             FieldDefinition(name: "Pagine", kind: .number, sortIndex: 0),
-            FieldDefinition(name: "Note", kind: .text, sortIndex: 1)
+            FieldDefinition(name: "Note", kind: .textArea, sortIndex: 1)
         ]
         return template
     }
@@ -202,6 +208,45 @@ enum DemoData {
             sheet.activitiesStorage.append(activity)
         }
         return sheet
+    }
+
+    // MARK: - Attività sciolte
+
+    /// Una di oggi soltanto, una con modello lunedì, mercoledì e venerdì per quattro settimane,
+    /// una senza modello ogni giorno senza fine e una con modello per dieci giorni.
+    private static func looseActivities(piano: Template, gym: Template) -> [Activity] {
+        let today = Calendar.schedule.startOfDay(for: Date())
+
+        let call = Activity(name: "Chiamare il dentista", weekday: nil, sortIndex: 0)
+        call.repeatStart = today
+
+        let scales = Activity(name: "Scale cromatiche", weekday: nil, sortIndex: 1)
+        scales.template = piano
+        scales.category = piano.categories.first
+        scales.hasTimer = true
+        scales.timerSeconds = piano.timerSeconds
+        scales.fieldValues = values(["", "90", "Entrambe"], for: piano)
+        scales.repeatStart = today
+        scales.repeatKind = .weekdays
+        scales.repeatWeekdays = [.monday, .wednesday, .friday]
+        scales.repeatLength = 4
+
+        let stretching = Activity(name: "Stretching", weekday: nil, sortIndex: 2)
+        stretching.hasTimer = true
+        stretching.timerSeconds = 600
+        stretching.repeatStart = today
+        stretching.repeatKind = .daily
+        stretching.reminderEnabled = true
+
+        let plank = Activity(name: "Plank", weekday: nil, sortIndex: 3)
+        plank.template = gym
+        plank.category = gym.categories.first
+        plank.fieldValues = values(["3", "1"], for: gym)
+        plank.repeatStart = today
+        plank.repeatKind = .daily
+        plank.repeatLength = 10
+
+        return [call, scales, stretching, plank]
     }
 
     // MARK: - Valori

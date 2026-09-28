@@ -137,11 +137,13 @@ private struct TemplateEditorView: View {
             }
             .onMove(perform: template.moveFields)
 
-            Button("Aggiungi campo", systemImage: "plus.circle.fill", action: addField)
+            if template.canAddField {
+                Button("Aggiungi campo", systemImage: "plus.circle.fill", action: addField)
+            }
         } header: {
             Text("Campi")
         } footer: {
-            Text("Informazioni aggiuntive da compilare per ogni attività.")
+            Text("Informazioni aggiuntive da compilare per ogni attività, al massimo \(Template.maxFields).")
         }
     }
 

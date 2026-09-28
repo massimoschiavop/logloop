@@ -3,6 +3,8 @@ options:
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
+  # L'app è in italiano: date, numeri e pulsanti di sistema in italiano anche con l'iPhone in inglese.
+  developmentLanguage: it
 targets:
   LogLoop:
     type: application

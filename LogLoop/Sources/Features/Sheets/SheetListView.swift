@@ -8,6 +8,8 @@ struct SheetListView: View {
     @AppStorage(SheetSortOrder.storageKey) private var sortOrder: SheetSortOrder = .manual
     @AppStorage(SheetSortOrder.ascendingStorageKey) private var isAscending = true
     @State private var path: [SheetRoute] = []
+    /// La scheda programmata o con dati registrati che si sta per eliminare, in attesa di conferma.
+    @State private var deleting: Sheet?
 
     private var sheets: [Sheet] {
         switch sortOrder {
@@ -38,8 +40,16 @@ struct SheetListView: View {
                             }
                             // Come `swipeToDelete`: lo swipe completo non elimina.
                             .swipeActions(allowsFullSwipe: false) {
-                                DeleteButton {
-                                    delete(sheet)
+                                if sheet.hasScheduleData {
+                                    // Con programmazioni o dati si chiede conferma: senza ruolo
+                                    // distruttivo, che toglierebbe la riga prima della risposta.
+                                    Button("Elimina", systemImage: "trash") { deleting = sheet }
+                                        .labelStyle(.iconOnly)
+                                        .tint(.red)
+                                } else {
+                                    DeleteButton {
+                                        delete(sheet)
+                                    }
                                 }
                                 DuplicateButton {
                                     context.insert(sheet.duplicate(sortIndex: manualSheets.count, existingTitles: manualSheets.map(\.title)))
@@ -54,6 +64,16 @@ struct SheetListView: View {
             }
             .navigationTitle("Schede")
             .navigationBarTitleDisplayMode(.inline)
+            .alert(
+                "Eliminare \(deleting?.title ?? "")?",
+                isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+                presenting: deleting
+            ) { sheet in
+                Button("Annulla", role: .cancel) {}
+                Button("Elimina tutto", role: .destructive) { withAnimation { delete(sheet) } }
+            } message: { sheet in
+                Text(deleteWarning(for: sheet))
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     sortMenu
@@ -69,25 +89,9 @@ struct SheetListView: View {
                 path = Array(path.prefix { $0.sheet.map { existing.contains($0.persistentModelID) } ?? true })
             }
             .navigationDestination(for: SheetRoute.self) { route in
-                if let sheet = route.sheet, sheet.isDeleted || sheet.modelContext == nil {
-                    Color.clear
-                } else {
-                    destination(for: route)
-                }
+                // Creata la scheda, l'editor lascia il posto alle sue attività.
+                SheetRouteDestination(route: route) { sheet in path = [.detail(sheet)] }
             }
-        }
-    }
-
-    @ViewBuilder
-    private func destination(for route: SheetRoute) -> some View {
-        switch route {
-        case .new:
-            // Creata la scheda, l'editor lascia il posto alle sue attività.
-            SheetEditorView { sheet in path = [.detail(sheet)] }
-        case .edit(let sheet):
-            SheetEditorView(sheet: sheet)
-        case .detail(let sheet):
-            SheetDetailView(sheet: sheet)
         }
     }
 
@@ -110,14 +114,25 @@ struct SheetListView: View {
         }
     }
 
+    /// L'avviso prima di eliminare una scheda programmata o con dati registrati.
+    private func deleteWarning(for sheet: Sheet) -> String {
+        "Verranno eliminati anche le attività, le programmazioni e tutti i dati registrati."
+    }
+
+    /// Elimina la scheda con le sue attività, le programmazioni e i dati registrati.
     private func delete(_ sheet: Sheet) {
         let remaining = manualSheets.filter { $0.persistentModelID != sheet.persistentModelID }
         // Le attività si eliminano una per una invece di lasciarle alla cascata: con l'annulla
         // attivo SwiftData va in crash eliminando a cascata oggetti mai caricati.
-        sheet.activitiesStorage.forEach(context.delete)
+        sheet.activitiesStorage.forEach { activity in
+            activity.completions.forEach(context.delete)
+            context.delete(activity)
+        }
+        sheet.schedules.forEach(context.delete)
         context.delete(sheet)
         remaining.renumber()
         context.nameUndo("Eliminazione Scheda")
+        ReminderScheduler.reschedule(in: context)
     }
 
     private func move(from source: IndexSet, to destination: Int) {
@@ -128,17 +143,46 @@ struct SheetListView: View {
     }
 }
 
-/// Le schermate raggiungibili dalla lista delle schede.
+/// Le schermate di una scheda, raggiungibili dalla lista delle schede e da Oggi.
 enum SheetRoute: Hashable {
     case new
     case edit(Sheet)
     case detail(Sheet)
+    /// Le attività della scheda aperte su una settimana e un giorno precisi.
+    case page(Sheet, week: Int, day: Weekday?)
+    case schedule(Sheet)
 
     /// La scheda mostrata, se c'è.
     var sheet: Sheet? {
         switch self {
         case .new: nil
-        case .edit(let sheet), .detail(let sheet): sheet
+        case .edit(let sheet), .detail(let sheet), .page(let sheet, _, _), .schedule(let sheet): sheet
+        }
+    }
+}
+
+/// La schermata di una `SheetRoute`; `onCreate` riceve la scheda creata con `.new`.
+struct SheetRouteDestination: View {
+    let route: SheetRoute
+    var onCreate: ((Sheet) -> Void)?
+
+    var body: some View {
+        // Una scheda eliminata mentre la sua schermata è aperta non va più letta.
+        if let sheet = route.sheet, sheet.isDeleted || sheet.modelContext == nil {
+            Color.clear
+        } else {
+            switch route {
+            case .new:
+                SheetEditorView(onCreate: onCreate)
+            case .edit(let sheet):
+                SheetEditorView(sheet: sheet)
+            case .detail(let sheet):
+                SheetDetailView(sheet: sheet)
+            case .page(let sheet, let week, let day):
+                SheetDetailView(sheet: sheet, week: week, day: day)
+            case .schedule(let sheet):
+                ScheduleEditorView(sheet: sheet)
+            }
         }
     }
 }
@@ -157,6 +201,14 @@ private struct SheetRow: View {
                 Text(sheet.template?.name ?? "Nessun modello")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            // Solo un'icona per le schede in programma: i dettagli sono in Oggi.
+            if sheet.activeSchedule != nil {
+                Image(systemName: "calendar")
+                    .font(.subheadline)
+                    .foregroundStyle(.tint)
+                    .accessibilityLabel("Programmata")
             }
         }
     }
