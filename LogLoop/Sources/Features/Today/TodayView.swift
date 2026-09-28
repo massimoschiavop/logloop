@@ -6,7 +6,8 @@ import SwiftUI
 /// dopo l'altro, fermandosi all'inizio di ognuno, con sotto ogni giorno una pillola con un tratto
 /// per blocco del colore del suo modello. Più in basso, con uno scorrimento a sé, i blocchi del
 /// giorno scelto in ordine di orario, da iniziare uno alla volta; le sciolte si raggruppano per
-/// modello. Con + si aggiunge un'attività senza bisogno di schede.
+/// modello. Con + si aggiunge un'attività semplice o si mette in programma una scheda, in un
+/// foglio che sale dal basso.
 struct TodayView: View {
     @Environment(\.modelContext) private var context
     @Query(filter: #Predicate<Schedule> { $0.isActive }) private var schedules: [Schedule]
@@ -15,6 +16,12 @@ struct TodayView: View {
     @State private var path = NavigationPath()
     /// La scheda di cui si sta per cancellare la programmazione, in attesa di conferma.
     @State private var unscheduling: Sheet?
+    /// Il blocco di attività sciolte ripetute da fermare o eliminare, in attesa di scelta.
+    @State private var deletingLoose: TodayEntry?
+    /// Vero mentre si sceglie cosa aggiungere con +.
+    @State private var isChoosingNewItem = false
+    /// Quello che si sta aggiungendo, nel foglio dal basso.
+    @State private var newItem: NewItem?
     /// Il mese mostrato nel calendario.
     @State private var month = Calendar.schedule.startOfMonth(for: Date())
     /// Il mese di cui il calendario prende l'altezza: cambia insieme all'animazione del passaggio
@@ -101,17 +108,16 @@ struct TodayView: View {
                 ToolbarItem(placement: .principal) {
                     Color.clear.frame(width: 1, height: 1)
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Programmazioni", systemImage: "list.bullet") {
-                        path.append(TodayRoute.schedules)
-                    }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Oggi") { select(today) }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Nuova attività", systemImage: "plus") {
-                        path.append(TodayRoute.newActivity(selectedDate))
+                    Button("Aggiungi", systemImage: "plus") {
+                        isChoosingNewItem = true
+                    }
+                    .confirmationDialog("Aggiungi", isPresented: $isChoosingNewItem) {
+                        Button("Attività semplice") { newItem = .activity(selectedDate) }
+                        Button("Da scheda") { newItem = .sheet(selectedDate) }
                     }
                 }
             }
@@ -120,28 +126,15 @@ struct TodayView: View {
             }
             .navigationDestination(for: TodayRoute.self) { route in
                 switch route {
-                case .schedules:
-                    ScheduleListView()
-                case .pickSheet:
-                    // La scelta lascia il posto all'editor: salvato, si torna a dove si era.
-                    SchedulePickerView { sheet in
-                        path.removeLast()
-                        path.append(SheetRoute.schedule(sheet))
-                    }
                 case .day(let source, let date):
                     DayPlanView(source: source, date: date)
                 case .session(let source, let date):
                     // Finita la scheda, Fine riporta direttamente a Oggi.
                     SessionView(source: source, date: date) { path = NavigationPath() }
-                case .newActivity(let date):
-                    ActivityEditorView(loose: nil, date: date)
-                case .editActivity(let activity):
-                    if activity.isDeleted || activity.modelContext == nil {
-                        Color.clear
-                    } else {
-                        ActivityEditorView(loose: activity, date: activity.repeatStart ?? Date())
-                    }
                 }
+            }
+            .sheet(item: $newItem) { item in
+                NewItemSheet(item: item) { newItem = nil }
             }
         }
     }
@@ -321,9 +314,12 @@ struct TodayView: View {
                     .listRowSeparator(index == entries.count - 1 ? .hidden : .visible, edges: .bottom)
                     .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
                     // Come `swipeToDelete`: lo swipe completo non cancella.
-                    // Solo per le schede: le attività sciolte si gestiscono una per
-                    // una, scorrendole nel dettaglio del giorno.
                     .swipeActions(allowsFullSwipe: false) {
+                        if entry.source.sheet == nil {
+                            Button("Elimina", systemImage: "trash") { requestDelete(entry) }
+                                .labelStyle(.iconOnly)
+                                .tint(.red)
+                        }
                         if let sheet = entry.source.sheet, let position = entry.position {
                             // Rosso ma senza ruolo distruttivo: con il ruolo la lista toglierebbe
                             // subito la riga, prima della conferma.
@@ -357,6 +353,53 @@ struct TodayView: View {
         } message: { sheet in
             Text(unscheduleWarning(for: sheet))
         }
+        .confirmationDialog(
+            deletingLoose.map(deleteTitle) ?? "",
+            isPresented: Binding(get: { deletingLoose != nil }, set: { if !$0 { deletingLoose = nil } }),
+            titleVisibility: .visible,
+            presenting: deletingLoose
+        ) { entry in
+            Button("Ferma da oggi") { stopLoose(entry.activities) }
+            Button("Elimina con lo storico", role: .destructive) { deleteLoose(entry.activities) }
+        } message: { entry in
+            Text(entry.activities.count == 1
+                ? "Fermandola resta nei giorni passati, con quello che hai fatto."
+                : "Fermandole restano nei giorni passati, con quello che hai fatto.")
+        }
+    }
+
+    /// Il nome dell'attività o, per un blocco con più attività, es. "Chitarra · 3 attività".
+    private func deleteTitle(_ entry: TodayEntry) -> String {
+        entry.activities.count == 1
+            ? entry.activities[0].name
+            : "\(entry.source.title) · \(entry.activities.count) attività"
+    }
+
+    /// Come nel dettaglio del giorno: se c'è qualcosa di ripetuto si sceglie se fermarlo o
+    /// eliminarlo; le attività di un giorno solo si eliminano subito.
+    private func requestDelete(_ entry: TodayEntry) {
+        if entry.activities.allSatisfy({ $0.repeatKind == .once }) {
+            deleteLoose(entry.activities)
+        } else {
+            deletingLoose = entry
+        }
+    }
+
+    /// Le ripetute smettono di comparire da oggi; quelle di un giorno solo si eliminano.
+    private func stopLoose(_ activities: [Activity]) {
+        for activity in activities {
+            if activity.repeatKind == .once {
+                context.deleteLooseActivity(activity)
+            } else {
+                context.stopRepeating(activity)
+            }
+        }
+        refreshDayColors()
+    }
+
+    private func deleteLoose(_ activities: [Activity]) {
+        activities.forEach(context.deleteLooseActivity)
+        refreshDayColors()
     }
 
     /// Ricalcola i colori delle pillole da due mesi prima a due dopo quello mostrato: il mese che
@@ -671,4 +714,44 @@ private extension Calendar {
 
 private extension Weekday {
     var isWeekend: Bool { self == .saturday || self == .sunday }
+}
+
+/// Quello che si aggiunge da Oggi con +, a partire dal giorno scelto.
+private enum NewItem: Identifiable {
+    /// Un'attività semplice, senza scheda.
+    case activity(Date)
+    /// Una scheda da mettere in programma.
+    case sheet(Date)
+
+    var id: String {
+        switch self {
+        case .activity(let date): "activity-\(date.timeIntervalSinceReferenceDate)"
+        case .sheet(let date): "sheet-\(date.timeIntervalSinceReferenceDate)"
+        }
+    }
+}
+
+/// Il foglio dal basso per aggiungere: la x lo chiude senza salvare, il check salva e lo chiude.
+/// Da scheda, prima si sceglie la scheda e poi la sua programmazione.
+private struct NewItemSheet: View {
+    let item: NewItem
+    let close: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                switch item {
+                case .activity(let date):
+                    ActivityEditorView(loose: nil, date: date)
+                case .sheet(let date):
+                    SchedulePickerView(date: date, onSave: close)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    CloseButton(action: close)
+                }
+            }
+        }
+    }
 }

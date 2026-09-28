@@ -150,13 +150,12 @@ enum SheetRoute: Hashable {
     case detail(Sheet)
     /// Le attività della scheda aperte su una settimana e un giorno precisi.
     case page(Sheet, week: Int, day: Weekday?)
-    case schedule(Sheet)
 
     /// La scheda mostrata, se c'è.
     var sheet: Sheet? {
         switch self {
         case .new: nil
-        case .edit(let sheet), .detail(let sheet), .page(let sheet, _, _), .schedule(let sheet): sheet
+        case .edit(let sheet), .detail(let sheet), .page(let sheet, _, _): sheet
         }
     }
 }
@@ -180,8 +179,6 @@ struct SheetRouteDestination: View {
                 SheetDetailView(sheet: sheet)
             case .page(let sheet, let week, let day):
                 SheetDetailView(sheet: sheet, week: week, day: day)
-            case .schedule(let sheet):
-                ScheduleEditorView(sheet: sheet)
             }
         }
     }

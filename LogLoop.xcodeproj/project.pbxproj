@@ -22,7 +22,6 @@
 		3680C1C17F23C026AB7F318D /* FieldDefinitionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872F529DA66D4683CDE3A53A /* FieldDefinitionEditorView.swift */; };
 		3ABDA83A26BD7C6C82C25BCE /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE8CC93531EE1DBA0965F1EC /* Palette.swift */; };
 		3B4E38F12E1DA08DEBF6A3A9 /* Template.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A856DE74CBFED3958063ED4 /* Template.swift */; };
-		3D1D98719996634F3DF647BC /* ScheduleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BF99C1BB63EAE8CDFA0898C /* ScheduleListView.swift */; };
 		54809AF794D4930394743073 /* SheetSortOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3A9C478455C8F3F4CC87BB6 /* SheetSortOrder.swift */; };
 		6BCEDE75DB305C95F2226707 /* Sortable.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9D2AE7A20C9353BB99E6DBD /* Sortable.swift */; };
 		75C8C90B53B8796D15EAA33A /* Schedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EB58F9699B02E93FC4E4B66 /* Schedule.swift */; };
@@ -48,6 +47,7 @@
 		CEDEBC63C199F62B7DB2F28C /* DemoData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E21B801A729D094B340885D /* DemoData.swift */; };
 		DC47D87AA4750B46CD93103B /* Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11FA19DCF6C7F8D5975BA5D /* Activity.swift */; };
 		DC7581D7430EDFE0AE3221B4 /* ReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DB8310AFB6684DC714D5DE /* ReminderScheduler.swift */; };
+		DE0FF73A5571377AEF65AA10 /* SchedulePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BB1CD36A11FA4018B089872 /* SchedulePickerView.swift */; };
 		DE46D4A7D0E2367A26B0E1B0 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4EECD546908ADCCE7F75B9A /* TodayView.swift */; };
 		E013618B12AE1187C0685161 /* WeekdayRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B87086A6EC20DF8423B1148 /* WeekdayRow.swift */; };
 		E01DC2086FB08C660775D627 /* SheetHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 213FAE02A7987ACCA5283BAC /* SheetHeader.swift */; };
@@ -80,13 +80,13 @@
 		5E21B801A729D094B340885D /* DemoData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoData.swift; sourceTree = "<group>"; };
 		669EA247D1BA70E656C767CF /* ColorSwatchRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSwatchRow.swift; sourceTree = "<group>"; };
 		68DB8310AFB6684DC714D5DE /* ReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderScheduler.swift; sourceTree = "<group>"; };
-		6BF99C1BB63EAE8CDFA0898C /* ScheduleListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleListView.swift; sourceTree = "<group>"; };
 		77BB7A0BD1A51CD7E9CF2EE5 /* SheetEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SheetEditorView.swift; sourceTree = "<group>"; };
 		7CD29EBDB3A944370309CA90 /* Int+Duration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Int+Duration.swift"; sourceTree = "<group>"; };
 		7D0835CFFA502238F15FA0EE /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
 		7E080792EAE2B022C68F90F5 /* DayPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPlanView.swift; sourceTree = "<group>"; };
 		84EFC6324F50F13B94D76404 /* SystemButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemButtons.swift; sourceTree = "<group>"; };
 		872F529DA66D4683CDE3A53A /* FieldDefinitionEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldDefinitionEditorView.swift; sourceTree = "<group>"; };
+		8BB1CD36A11FA4018B089872 /* SchedulePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulePickerView.swift; sourceTree = "<group>"; };
 		941A86EF9C86E3A9EC23AA32 /* TemplateListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateListView.swift; sourceTree = "<group>"; };
 		948EB55F2231324AAAF62788 /* TemplateCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateCategory.swift; sourceTree = "<group>"; };
 		9773E57BEA81A62E51680424 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
@@ -192,7 +192,7 @@
 			children = (
 				7E080792EAE2B022C68F90F5 /* DayPlanView.swift */,
 				4BD15055E5BA9CE72D4548C3 /* PlanSource.swift */,
-				6BF99C1BB63EAE8CDFA0898C /* ScheduleListView.swift */,
+				8BB1CD36A11FA4018B089872 /* SchedulePickerView.swift */,
 				AAB031F6CAEAB1413CA2796C /* SessionCompletedView.swift */,
 				D8515C034BF302003A05DBDD /* SessionView.swift */,
 				A4EECD546908ADCCE7F75B9A /* TodayView.swift */,
@@ -415,7 +415,7 @@
 				A4CD825288E68F54395692B7 /* SampleData.swift in Sources */,
 				75C8C90B53B8796D15EAA33A /* Schedule.swift in Sources */,
 				A7CC0F1577280AA4AB331943 /* ScheduleEditorView.swift in Sources */,
-				3D1D98719996634F3DF647BC /* ScheduleListView.swift in Sources */,
+				DE0FF73A5571377AEF65AA10 /* SchedulePickerView.swift in Sources */,
 				EFA5CA5223A78C5F3CA8F321 /* SessionCompletedView.swift in Sources */,
 				8F764E3FD4207707013D7026 /* SessionView.swift in Sources */,
 				CD7C0DB72FBA67163C7AF14B /* SettingsView.swift in Sources */,

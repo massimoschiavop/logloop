@@ -5,6 +5,9 @@ import SwiftUI
 /// promemoria. Come gli altri editor, le modifiche arrivano al database solo con il check.
 struct ScheduleEditorView: View {
     let sheet: Sheet
+    /// Chiamata dopo il salvataggio al posto del ritorno indietro, es. per chiudere il foglio
+    /// da cui l'editor è stato aperto.
+    var onSave: (() -> Void)?
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
@@ -15,10 +18,12 @@ struct ScheduleEditorView: View {
     /// Vero se le notifiche sono state negate: il promemoria non può arrivare.
     @State private var isNotificationDenied = false
 
-    init(sheet: Sheet) {
+    /// Una scheda senza programmazione parte dalla settimana di `date`.
+    init(sheet: Sheet, date: Date = Date(), onSave: (() -> Void)? = nil) {
         self.sheet = sheet
+        self.onSave = onSave
         let schedule = sheet.activeSchedule
-        _startDate = State(initialValue: schedule?.startDate ?? Date())
+        _startDate = State(initialValue: schedule?.startDate ?? date)
         _repeats = State(initialValue: schedule?.repeats ?? true)
         _reminderEnabled = State(initialValue: schedule?.reminderEnabled ?? false)
         let minutes = schedule?.reminderMinutes ?? Schedule.defaultReminderMinutes
@@ -112,6 +117,6 @@ struct ScheduleEditorView: View {
         context.nameUndo("Programmazione Scheda")
         try? context.save()
         ReminderScheduler.reschedule(in: context)
-        dismiss()
+        if let onSave { onSave() } else { dismiss() }
     }
 }
